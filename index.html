@@ -209,11 +209,7 @@
     =================================================== -->
     <a-marker
       id="ar-marker"
-      preset="hiro"
-      smooth="true"
-      smoothCount="5"
-      smoothTolerance="0.01"
-      smoothThreshold="2">
+      preset="hiro">
 
       <!-- ====================================================
            CONTENU AR — CE QUI APPARAÎT EN RÉALITÉ AUGMENTÉE
@@ -231,9 +227,9 @@
         id="ar-cube"
         position="0 0.5 0"
         rotation="0 0 0"
-        width="0.8" height="0.8" depth="0.8"
+        scale="1 1 1"
+        width="1" height="1" depth="1"
         color="#E74C3C"
-        shadow="cast: true"
         animation="property: rotation; to: 0 360 0; loop: true; dur: 3000; easing: linear">
       </a-box>
 
