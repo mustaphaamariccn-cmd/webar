@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+
+  <!-- ============================================================
+       CONFIGURATION — MODIFIEZ CES VARIABLES POUR PERSONNALISER
+       ============================================================ -->
+  <script>
+    const CONFIG = {
+      // Titre affiché dans l'interface
+      titre: "Mon Expérience AR",
+
+      // Message d'instruction affiché à l'utilisateur
+      messageInstruction: "Pointez vers le marqueur imprimé",
+
+      // Couleur principale du contenu AR (format hex)
+      couleurPrincipale: "#E74C3C",
+
+      // Couleur secondaire (texte flottant, etc.)
+      couleurSecondaire: "#ECF0F1",
+
+      // Texte affiché en AR au-dessus du marqueur
+      texteAR: "Scannez-moi !",
+
+      // URL de la vidéo AR (laisser vide "" pour désactiver)
+      // Exemples : "assets/video.mp4" ou URL absolue HTTPS
+      urlVideo: "",
+
+      // URL de l'image AR (laisser vide "" pour désactiver)
+      // Exemples : "assets/poster.png"
+      urlImage: "",
+
+      // URL de destination si l'utilisateur touche le contenu AR
+      urlLienAR: "https://example.com",
+
+      // Durée d'animation de rotation (ms)
+      vitesseRotation: 3000,
+    };
+  </script>
+  <!-- ============================================================ -->
+
+  <title id="page-title">WebAR</title>
+
+  <!-- ========== LIBRAIRIES AR (ne pas modifier) ========== -->
+  <!-- A-Frame : moteur de scène 3D/VR/AR -->
+  <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
+  <!-- AR.js : couche de réalité augmentée (marqueurs + tracking caméra) -->
+  <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
+  <!-- ======================================================= -->
+
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: #000;
+      overflow: hidden;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+    }
+
+    /* Bandeau supérieur */
+    #ui-header {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      padding: 14px 16px;
+      background: linear-gradient(to bottom, rgba(0,0,0,0.75) 0%, transparent 100%);
+      color: #fff;
+      font-size: 15px;
+      font-weight: 600;
+      text-align: center;
+      z-index: 9999;
+      pointer-events: none;
+      letter-spacing: 0.3px;
+    }
+
+    /* Pastille de statut */
+    #status-badge {
+      position: fixed;
+      top: 50px; left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0,0,0,0.55);
+      color: #fff;
+      padding: 6px 16px;
+      border-radius: 20px;
+      font-size: 13px;
+      z-index: 9999;
+      pointer-events: none;
+      transition: opacity 0.3s;
+      backdrop-filter: blur(4px);
+      -webkit-backdrop-filter: blur(4px);
+    }
+
+    /* Indication clignotante en bas */
+    #scan-hint {
+      position: fixed;
+      bottom: 48px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0,0,0,0.6);
+      color: #fff;
+      padding: 12px 24px;
+      border-radius: 24px;
+      font-size: 14px;
+      z-index: 9999;
+      pointer-events: none;
+      white-space: nowrap;
+      backdrop-filter: blur(4px);
+      -webkit-backdrop-filter: blur(4px);
+      animation: pulse-hint 2s ease-in-out infinite;
+    }
+
+    #scan-hint a {
+      color: #7EC8E3;
+      text-decoration: underline;
+      pointer-events: all;
+    }
+
+    @keyframes pulse-hint {
+      0%, 100% { opacity: 1; transform: translateX(-50%) scale(1); }
+      50%       { opacity: 0.6; transform: translateX(-50%) scale(0.97); }
+    }
+
+    /* Masquer le canvas A-Frame par défaut en plein écran */
+    a-scene { display: block; width: 100vw; height: 100vh; }
+
+    /* Empêche le scroll sur iOS quand AR est actif */
+    html { height: 100%; overflow: hidden; }
+  </style>
+</head>
+
+<body>
+
+  <!-- ===== INTERFACE UTILISATEUR ===== -->
+  <div id="ui-header">📷 <span id="titre-display"></span></div>
+
+  <div id="status-badge" id="status">🔍 Initialisation…</div>
+
+  <div id="scan-hint">
+    🎯 <span id="hint-text"></span> —
+    <a href="marker.html" target="_blank">Voir le marqueur à imprimer</a>
+  </div>
+
+  <!-- ===================================================
+       SCÈNE AR PRINCIPALE
+
+       arjs="trackingMethod: best"
+         → choisit automatiquement la meilleure méthode
+       debugUIEnabled: false
+         → supprime l'interface de debug AR.js
+       detectionMode: mono_and_matrix
+         → détecte marqueurs noirs/blancs + codes matriciels
+  =================================================== -->
+  <a-scene
+    embedded
+    arjs="trackingMethod: best; sourceType: webcam; debugUIEnabled: false; detectionMode: mono_and_matrix; matrixCodeType: 3x3;"
+    vr-mode-ui="enabled: false"
+    renderer="logarithmicDepthBuffer: true; precision: medium; antialias: true;"
+    loading-screen="enabled: false">
+
+    <!-- ===== ASSETS MULTIMÉDIAS =====
+         Déclarez ici vos vidéos et images.
+         Les fichiers doivent être dans le dossier /assets/
+         ou accessibles via une URL HTTPS.
+    ===================================-->
+    <a-assets timeout="10000">
+
+      <!--
+        VIDÉO AR — Décommentez et renseignez src si vous avez une vidéo
+        Le fichier doit être au format MP4 (H.264), encodé pour le web.
+        Placez-le dans assets/video.mp4
+      -->
+      <!-- <video id="ar-video"
+               src="assets/video.mp4"
+               preload="auto"
+               playsinline
+               webkit-playsinline
+               muted
+               loop
+               crossorigin="anonymous">
+      </video> -->
+
+      <!--
+        IMAGE AR — Décommentez et renseignez src si vous avez une image
+        Formats supportés : PNG, JPG, GIF (animé ✓), WebP
+        Placez-la dans assets/image.png
+      -->
+      <!-- <img id="ar-image" src="assets/image.png" crossorigin="anonymous"> -->
+
+    </a-assets>
+
+    <!-- ===================================================
+         MARQUEUR AR
+
+         preset="hiro"
+           → Utilise le marqueur Hiro standard (voir marker.html)
+
+         POUR UN MARQUEUR PERSONNALISÉ :
+           Remplacez par :
+           type="pattern" url="assets/mon-marqueur.patt"
+           (générez le fichier .patt sur https://jeromeetienne.github.io/AR.js/three.js/examples/marker-training/examples/generator.html)
+
+         POUR LA RECONNAISSANCE D'IMAGE (NFT) :
+           Utilisez le fichier nft.html fourni séparément.
+           Nécessite de générer des fichiers .fset/.iset avec l'outil NFT Marker Creator.
+    =================================================== -->
+    <a-marker
+      id="ar-marker"
+      preset="hiro"
+      smooth="true"
+      smoothCount="5"
+      smoothTolerance="0.01"
+      smoothThreshold="2">
+
+      <!-- ====================================================
+           CONTENU AR — CE QUI APPARAÎT EN RÉALITÉ AUGMENTÉE
+           Activez/désactivez chaque bloc selon vos besoins.
+      ==================================================== -->
+
+      <!-- ── BLOC A : Objet 3D animé (actif par défaut) ────────────────── -->
+      <!--
+        position="0 0.5 0"  → hauteur au-dessus du marqueur (Y = 0.5 unité)
+        rotation            → orientation initiale
+        animation           → rotation continue sur l'axe Y
+        Modifiez color, width, height, depth selon vos besoins.
+      -->
+      <a-box
+        id="ar-cube"
+        position="0 0.5 0"
+        rotation="0 0 0"
+        width="0.8" height="0.8" depth="0.8"
+        color="#E74C3C"
+        shadow="cast: true"
+        animation="property: rotation; to: 0 360 0; loop: true; dur: 3000; easing: linear">
+      </a-box>
+
+      <!-- ── BLOC B : Texte 3D flottant ────────────────────────────────── -->
+      <!--
+        value        → le texte affiché
+        position     → position au-dessus du cube
+        align center → centré horizontalement
+        animation    → flottement vertical doux
+        Modifiez value, color, width (taille du texte) selon vos besoins.
+      -->
+      <a-text
+        id="ar-text"
+        value="Scannez-moi !"
+        position="0 1.6 0"
+        align="center"
+        color="#ECF0F1"
+        width="4"
+        font="https://cdn.aframe.io/fonts/Exo2Bold.fnt"
+        animation="property: position; to: 0 1.9 0; dir: alternate; loop: true; dur: 1500; easing: easeInOutSine">
+      </a-text>
+
+      <!-- ── BLOC C : Vidéo (décommentez + ajoutez assets/video.mp4) ───── -->
+      <!--
+        IMPORTANT iOS : la vidéo doit être muted pour se lancer automatiquement.
+        Pour une vidéo avec son, l'utilisateur doit toucher l'écran.
+
+        width / height : ratio de votre vidéo (ex: 16:9 → 2.4 / 1.35)
+        rotation="-90 0 0" : pose à plat sur le marqueur
+      -->
+      <!--
+      <a-video
+        id="ar-video-plane"
+        src="#ar-video"
+        width="2.4" height="1.35"
+        position="0 0.05 0"
+        rotation="-90 0 0">
+      </a-video>
+      -->
+
+      <!-- ── BLOC D : Image / GIF animé ────────────────────────────────── -->
+      <!--
+        Idéal pour logo, illustration, GIF animé.
+        rotation="-90 0 0" : pose à plat. Retirez-le pour un panneau vertical.
+      -->
+      <!--
+      <a-image
+        id="ar-image-plane"
+        src="#ar-image"
+        width="1.5" height="1.5"
+        position="0 0.1 0"
+        rotation="-90 0 0"
+        animation="property: scale; from: 1 1 1; to: 1.05 1.05 1.05; dir: alternate; loop: true; dur: 1000; easing: easeInOutSine">
+      </a-image>
+      -->
+
+      <!-- ── BLOC E : Sphère lumineuse ──────────────────────────────────── -->
+      <!--
+      <a-sphere
+        position="0 0.5 0"
+        radius="0.4"
+        color="#3498DB"
+        metalness="0.3"
+        roughness="0.4"
+        animation="property: rotation; to: 0 360 0; loop: true; dur: 4000; easing: linear">
+      </a-sphere>
+      -->
+
+      <!-- ── BLOC F : Plan avec dégradé (shader custom) ─────────────────── -->
+      <!--
+      <a-plane
+        position="0 0.01 0"
+        rotation="-90 0 0"
+        width="2" height="2"
+        color="#2C3E50"
+        opacity="0.8">
+      </a-plane>
+      -->
+
+    </a-marker>
+
+    <!-- Lumière ambiante pour un meilleur rendu 3D -->
+    <a-light type="ambient" color="#ffffff" intensity="0.8"></a-light>
+    <a-light type="directional" color="#ffffff" intensity="0.5" position="1 2 1"></a-light>
+
+    <!-- Caméra AR — ne pas modifier -->
+    <a-entity camera></a-entity>
+
+  </a-scene>
+
+  <!-- ===== SCRIPT D'INITIALISATION ET D'INTERACTIONS ===== -->
+  <script>
+    // Applique la configuration au chargement
+    document.getElementById('titre-display').textContent = CONFIG.titre;
+    document.getElementById('hint-text').textContent = CONFIG.messageInstruction;
+    document.title = CONFIG.titre;
+
+    // Applique la couleur principale au cube
+    document.getElementById('ar-cube').setAttribute('color', CONFIG.couleurPrincipale);
+
+    // Applique le texte et la couleur secondaire
+    const arText = document.getElementById('ar-text');
+    arText.setAttribute('value', CONFIG.texteAR);
+    arText.setAttribute('color', CONFIG.couleurSecondaire);
+
+    // Applique la vitesse de rotation
+    document.getElementById('ar-cube').setAttribute('animation', {
+      property: 'rotation',
+      to: '0 360 0',
+      loop: true,
+      dur: CONFIG.vitesseRotation,
+      easing: 'linear'
+    });
+
+    // Active la vidéo si configurée
+    if (CONFIG.urlVideo) {
+      const assets = document.querySelector('a-assets');
+      const videoEl = document.createElement('video');
+      videoEl.id = 'ar-video';
+      videoEl.src = CONFIG.urlVideo;
+      videoEl.setAttribute('preload', 'auto');
+      videoEl.setAttribute('playsinline', '');
+      videoEl.setAttribute('webkit-playsinline', '');
+      videoEl.setAttribute('muted', '');
+      videoEl.setAttribute('loop', '');
+      videoEl.setAttribute('crossorigin', 'anonymous');
+      assets.appendChild(videoEl);
+
+      const cube = document.getElementById('ar-cube');
+      cube.parentNode.insertBefore(
+        Object.assign(document.createElement('a-video'), {
+          setAttribute: (k,v) => {},
+        }),
+        cube
+      );
+      // Crée le plan vidéo dans la scène
+      const marker = document.getElementById('ar-marker');
+      const videoPlane = document.createElement('a-video');
+      videoPlane.setAttribute('src', '#ar-video');
+      videoPlane.setAttribute('width', '2.4');
+      videoPlane.setAttribute('height', '1.35');
+      videoPlane.setAttribute('position', '0 0.05 0');
+      videoPlane.setAttribute('rotation', '-90 0 0');
+      marker.appendChild(videoPlane);
+
+      // Masque le cube si vidéo active
+      document.getElementById('ar-cube').setAttribute('visible', 'false');
+      document.getElementById('ar-text').setAttribute('position', '0 0.3 0');
+    }
+
+    // Active l'image si configurée
+    if (CONFIG.urlImage && !CONFIG.urlVideo) {
+      const assets = document.querySelector('a-assets');
+      const imgEl = document.createElement('img');
+      imgEl.id = 'ar-image';
+      imgEl.src = CONFIG.urlImage;
+      imgEl.setAttribute('crossorigin', 'anonymous');
+      assets.appendChild(imgEl);
+
+      const marker = document.getElementById('ar-marker');
+      const imagePlane = document.createElement('a-image');
+      imagePlane.setAttribute('src', '#ar-image');
+      imagePlane.setAttribute('width', '1.5');
+      imagePlane.setAttribute('height', '1.5');
+      imagePlane.setAttribute('position', '0 0.1 0');
+      imagePlane.setAttribute('rotation', '-90 0 0');
+      marker.appendChild(imagePlane);
+
+      document.getElementById('ar-cube').setAttribute('visible', 'false');
+    }
+
+    // ── Gestion des événements marqueur ──────────────────────────
+    const marker    = document.getElementById('ar-marker');
+    const hint      = document.getElementById('scan-hint');
+    const statusBadge = document.getElementById('status-badge');
+
+    marker.addEventListener('markerFound', () => {
+      hint.style.display = 'none';
+      statusBadge.textContent = '✅ Marqueur détecté !';
+      statusBadge.style.background = 'rgba(39,174,96,0.75)';
+
+      // Déclenche la vidéo si présente
+      const vid = document.getElementById('ar-video');
+      if (vid) {
+        vid.play().catch(() => {
+          // iOS peut bloquer sans interaction utilisateur
+          document.addEventListener('touchstart', () => vid.play(), { once: true });
+        });
+      }
+    });
+
+    marker.addEventListener('markerLost', () => {
+      hint.style.display = 'block';
+      statusBadge.textContent = '🔍 Recherche du marqueur…';
+      statusBadge.style.background = 'rgba(0,0,0,0.55)';
+    });
+
+    // ── Mise à jour du statut au chargement ──────────────────────
+    window.addEventListener('load', () => {
+      statusBadge.textContent = '📷 Caméra activée — ' + CONFIG.messageInstruction;
+    });
+
+    // ── Lien cliquable sur le contenu AR ─────────────────────────
+    if (CONFIG.urlLienAR) {
+      document.getElementById('ar-cube').addEventListener('click', () => {
+        window.open(CONFIG.urlLienAR, '_blank');
+      });
+    }
+  </script>
+
+</body>
+</html>

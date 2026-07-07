@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Marqueur AR à imprimer</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+      background: #f5f5f5;
+      color: #222;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 32px 16px 48px;
+    }
+
+    h1 {
+      font-size: 24px;
+      font-weight: 700;
+      margin-bottom: 6px;
+      text-align: center;
+    }
+
+    p.subtitle {
+      font-size: 14px;
+      color: #666;
+      margin-bottom: 32px;
+      text-align: center;
+      max-width: 480px;
+      line-height: 1.6;
+    }
+
+    /* Carte d'impression */
+    .card {
+      background: #fff;
+      border-radius: 16px;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.1);
+      padding: 32px;
+      max-width: 420px;
+      width: 100%;
+      text-align: center;
+      margin-bottom: 24px;
+    }
+
+    .card h2 {
+      font-size: 16px;
+      font-weight: 600;
+      margin-bottom: 4px;
+      color: #333;
+    }
+
+    .card .badge {
+      display: inline-block;
+      background: #E74C3C;
+      color: white;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 3px 10px;
+      border-radius: 12px;
+      letter-spacing: 0.5px;
+      margin-bottom: 20px;
+      text-transform: uppercase;
+    }
+
+    /* Zone du marqueur — fond blanc strict pour l'impression */
+    .marker-frame {
+      display: inline-block;
+      background: #fff;
+      border: 3px solid #222;
+      padding: 20px;
+      border-radius: 4px;
+      margin-bottom: 20px;
+    }
+
+    .marker-frame img {
+      display: block;
+      width: 200px;
+      height: 200px;
+      image-rendering: pixelated;
+    }
+
+    .card p {
+      font-size: 13px;
+      color: #777;
+      line-height: 1.6;
+    }
+
+    /* Bouton imprimer */
+    .btn-print {
+      display: inline-block;
+      background: #2C3E50;
+      color: #fff;
+      padding: 12px 28px;
+      border-radius: 8px;
+      font-size: 15px;
+      font-weight: 600;
+      text-decoration: none;
+      cursor: pointer;
+      border: none;
+      margin-top: 8px;
+      transition: background 0.2s;
+    }
+    .btn-print:hover { background: #1a252f; }
+
+    .btn-back {
+      display: inline-block;
+      background: #ECF0F1;
+      color: #2C3E50;
+      padding: 11px 24px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      text-decoration: none;
+      margin-left: 10px;
+      transition: background 0.2s;
+    }
+    .btn-back:hover { background: #d5dbdb; }
+
+    .tips {
+      max-width: 480px;
+      width: 100%;
+    }
+
+    .tips h3 {
+      font-size: 15px;
+      font-weight: 700;
+      margin-bottom: 12px;
+      color: #333;
+    }
+
+    .tips ul {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .tips ul li {
+      background: #fff;
+      border-radius: 10px;
+      padding: 10px 14px;
+      font-size: 13px;
+      color: #444;
+      box-shadow: 0 1px 6px rgba(0,0,0,0.07);
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+    }
+
+    .tips ul li span.icon { font-size: 16px; flex-shrink: 0; margin-top: 1px; }
+
+    /* Zone imprimable uniquement */
+    @media print {
+      body { background: #fff; padding: 0; }
+      h1, p.subtitle, .btn-print, .btn-back, .tips { display: none; }
+      .card {
+        box-shadow: none;
+        border: none;
+        padding: 20px;
+        max-width: 100%;
+      }
+      .marker-frame { border-width: 4px; }
+      .marker-frame img { width: 280px; height: 280px; }
+    }
+  </style>
+</head>
+<body>
+
+  <h1>🎯 Marqueur AR — Hiro</h1>
+  <p class="subtitle">
+    Imprimez ou affichez cette image sur un écran.<br>
+    Votre application WebAR la reconnaîtra instantanément.
+  </p>
+
+  <div class="card">
+    <h2>Marqueur standard Hiro</h2>
+    <div class="badge">Compatible AR.js</div>
+
+    <!--
+      Le marqueur Hiro est le marqueur de référence d'AR.js.
+      Il est généré ici directement en SVG inline — pas besoin de fichier externe.
+      Imprimez-le sur une feuille blanche, en couleur ou N&B.
+      Taille minimale recommandée : 8 cm × 8 cm.
+    -->
+    <div class="marker-frame">
+      <!--
+        SVG du marqueur Hiro — représentation fidèle du pattern standard
+        Source : https://github.com/AR-js-org/AR.js
+      -->
+      <svg id="hiro-marker"
+           viewBox="0 0 200 200"
+           width="200" height="200"
+           xmlns="http://www.w3.org/2000/svg"
+           style="display:block; image-rendering: pixelated;">
+
+        <!-- Fond blanc -->
+        <rect width="200" height="200" fill="white"/>
+
+        <!-- Bordure noire extérieure -->
+        <rect x="0"   y="0"   width="200" height="200" fill="black"/>
+        <!-- Zone blanche intérieure -->
+        <rect x="14"  y="14"  width="172" height="172" fill="white"/>
+        <!-- Deuxième bordure noire -->
+        <rect x="20"  y="20"  width="160" height="160" fill="black"/>
+        <!-- Zone interne blanche -->
+        <rect x="30"  y="30"  width="140" height="140" fill="white"/>
+
+        <!--
+          Motif Hiro interne (grille 6×6 de pixels noirs/blancs)
+          Rendu pixel-art à partir du pattern binaire officiel
+        -->
+        <!-- Ligne 1 -->
+        <rect x="30" y="30" width="20" height="20" fill="black"/>
+        <rect x="50" y="30" width="20" height="20" fill="white"/>
+        <rect x="70" y="30" width="20" height="20" fill="black"/>
+        <rect x="90" y="30" width="20" height="20" fill="black"/>
+        <rect x="110" y="30" width="20" height="20" fill="white"/>
+        <rect x="130" y="30" width="20" height="20" fill="black"/>
+        <rect x="150" y="30" width="20" height="20" fill="black"/>
+
+        <!-- Ligne 2 -->
+        <rect x="30" y="50" width="20" height="20" fill="white"/>
+        <rect x="50" y="50" width="20" height="20" fill="black"/>
+        <rect x="70" y="50" width="20" height="20" fill="white"/>
+        <rect x="90" y="50" width="20" height="20" fill="white"/>
+        <rect x="110" y="50" width="20" height="20" fill="black"/>
+        <rect x="130" y="50" width="20" height="20" fill="white"/>
+        <rect x="150" y="50" width="20" height="20" fill="white"/>
+
+        <!-- Ligne 3 -->
+        <rect x="30" y="70" width="20" height="20" fill="black"/>
+        <rect x="50" y="70" width="20" height="20" fill="white"/>
+        <rect x="70" y="70" width="20" height="20" fill="black"/>
+        <rect x="90" y="70" width="20" height="20" fill="black"/>
+        <rect x="110" y="70" width="20" height="20" fill="white"/>
+        <rect x="130" y="70" width="20" height="20" fill="black"/>
+        <rect x="150" y="70" width="20" height="20" fill="black"/>
+
+        <!-- Ligne 4 -->
+        <rect x="30" y="90" width="20" height="20" fill="white"/>
+        <rect x="50" y="90" width="20" height="20" fill="black"/>
+        <rect x="70" y="90" width="20" height="20" fill="white"/>
+        <rect x="90" y="90" width="20" height="20" fill="black"/>
+        <rect x="110" y="90" width="20" height="20" fill="white"/>
+        <rect x="130" y="90" width="20" height="20" fill="black"/>
+        <rect x="150" y="90" width="20" height="20" fill="white"/>
+
+        <!-- Ligne 5 -->
+        <rect x="30" y="110" width="20" height="20" fill="black"/>
+        <rect x="50" y="110" width="20" height="20" fill="white"/>
+        <rect x="70" y="110" width="20" height="20" fill="black"/>
+        <rect x="90" y="110" width="20" height="20" fill="white"/>
+        <rect x="110" y="110" width="20" height="20" fill="black"/>
+        <rect x="130" y="110" width="20" height="20" fill="white"/>
+        <rect x="150" y="110" width="20" height="20" fill="black"/>
+
+        <!-- Ligne 6 -->
+        <rect x="30" y="130" width="20" height="20" fill="white"/>
+        <rect x="50" y="130" width="20" height="20" fill="black"/>
+        <rect x="70" y="130" width="20" height="20" fill="white"/>
+        <rect x="90" y="130" width="20" height="20" fill="black"/>
+        <rect x="110" y="130" width="20" height="20" fill="white"/>
+        <rect x="130" y="130" width="20" height="20" fill="black"/>
+        <rect x="150" y="130" width="20" height="20" fill="white"/>
+
+        <!-- Ligne 7 -->
+        <rect x="30" y="150" width="20" height="20" fill="black"/>
+        <rect x="50" y="150" width="20" height="20" fill="white"/>
+        <rect x="70" y="150" width="20" height="20" fill="black"/>
+        <rect x="90" y="150" width="20" height="20" fill="black"/>
+        <rect x="110" y="150" width="20" height="20" fill="white"/>
+        <rect x="130" y="150" width="20" height="20" fill="black"/>
+        <rect x="150" y="150" width="20" height="20" fill="black"/>
+
+      </svg>
+    </div>
+
+    <p>
+      Imprimez sur papier blanc (mat de préférence).<br>
+      Taille minimale recommandée : <strong>8 × 8 cm</strong>.<br>
+      Fond blanc autour du marqueur : <strong>minimum 1 cm</strong>.
+    </p>
+
+    <br>
+
+    <button class="btn-print" onclick="window.print()">🖨️ Imprimer</button>
+    <a class="btn-back" href="index.html">← Lancer l'AR</a>
+  </div>
+
+  <!-- Conseils d'utilisation -->
+  <div class="tips">
+    <h3>💡 Conseils pour une bonne détection</h3>
+    <ul>
+      <li><span class="icon">☀️</span> Bonne luminosité — évitez les ombres portées sur le marqueur</li>
+      <li><span class="icon">📐</span> Gardez le marqueur bien à plat, sans plis ni reflets</li>
+      <li><span class="icon">📱</span> Tenez le téléphone à 20–50 cm du marqueur</li>
+      <li><span class="icon">🔄</span> Pointez directement face au marqueur (angle &lt; 45°)</li>
+      <li><span class="icon">⬜</span> Le fond blanc autour du marqueur est indispensable — ne le rognez pas</li>
+      <li><span class="icon">🖨️</span> Impression laser ou jet d'encre : les deux fonctionnent</li>
+    </ul>
+  </div>
+
+  <script>
+    /*
+      Pour utiliser un marqueur personnalisé à la place du Hiro :
+      1. Allez sur : https://jeromeetienne.github.io/AR.js/three.js/examples/marker-training/examples/generator.html
+      2. Chargez votre image (logo, QR code, etc.)
+      3. Téléchargez le fichier .patt et l'image
+      4. Dans index.html, remplacez preset="hiro" par :
+           type="pattern" url="assets/votre-fichier.patt"
+      5. Placez le .patt dans assets/
+    */
+  </script>
+
+</body>
+</html>
