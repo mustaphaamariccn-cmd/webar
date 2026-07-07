@@ -49,8 +49,10 @@
   <!-- ========== LIBRAIRIES AR (ne pas modifier) ========== -->
   <!-- A-Frame : moteur de scène 3D/VR/AR -->
   <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
-  <!-- AR.js : couche de réalité augmentée (marqueurs + tracking caméra) -->
-  <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
+  <!-- AR.js : couche de réalité augmentée (marqueurs + tracking caméra)
+       Version FIGÉE (3.4.5) — ne jamais charger depuis "master" : la branche
+       de développement change sans prévenir et casse le tracking. -->
+  <script src="https://cdn.jsdelivr.net/gh/AR-js-org/AR.js@3.4.5/aframe/build/aframe-ar.js"></script>
   <!-- ======================================================= -->
 
   <style>
@@ -137,7 +139,7 @@
   <!-- ===== INTERFACE UTILISATEUR ===== -->
   <div id="ui-header">📷 <span id="titre-display"></span></div>
 
-  <div id="status-badge" id="status">🔍 Initialisation…</div>
+  <div id="status-badge">🔍 Initialisation…</div>
 
   <div id="scan-hint">
     🎯 <span id="hint-text"></span> —
@@ -156,7 +158,13 @@
   =================================================== -->
   <a-scene
     embedded
-    arjs="sourceType: webcam; debugUIEnabled: false; patternRatio: 0.5;"
+    arjs="sourceType: webcam;
+          debugUIEnabled: false;
+          detectionMode: mono;
+          patternRatio: 0.5;
+          sourceWidth: 1280; sourceHeight: 960;
+          displayWidth: 1280; displayHeight: 960;
+          maxDetectionRate: 60;"
     vr-mode-ui="enabled: false"
     loading-screen="enabled: false">
 
@@ -211,7 +219,9 @@
       preset="hiro"
       smooth="true"
       smoothCount="10"
-      smoothTolerance="0.01">
+      smoothTolerance="0.01"
+      smoothThreshold="5"
+      emitevents="true">
 
       <!-- ====================================================
            CONTENU AR — CE QUI APPARAÎT EN RÉALITÉ AUGMENTÉE
@@ -360,13 +370,6 @@
       videoEl.setAttribute('crossorigin', 'anonymous');
       assets.appendChild(videoEl);
 
-      const cube = document.getElementById('ar-cube');
-      cube.parentNode.insertBefore(
-        Object.assign(document.createElement('a-video'), {
-          setAttribute: (k,v) => {},
-        }),
-        cube
-      );
       // Crée le plan vidéo dans la scène
       const marker = document.getElementById('ar-marker');
       const videoPlane = document.createElement('a-video');
@@ -433,6 +436,32 @@
     window.addEventListener('load', () => {
       statusBadge.textContent = '📷 Caméra activée — ' + CONFIG.messageInstruction;
     });
+
+    // ── CORRECTIF ALIGNEMENT VIDÉO / CANVAS ──────────────────────
+    // Problème connu d'AR.js : le flux caméra et le canvas 3D se
+    // désalignent (contenu AR décalé vers le bord de l'écran),
+    // surtout sur mobile ou après rotation. On force le recalage.
+    function recalerAR() {
+      const sceneEl = document.querySelector('a-scene');
+      if (!sceneEl || !sceneEl.systems || !sceneEl.systems.arjs) return;
+      const session = sceneEl.systems.arjs._arSession;
+      if (!session || !session.arSource) return;
+      try {
+        session.arSource.onResizeElement();
+        if (sceneEl.canvas) {
+          session.arSource.copyElementSizeTo(sceneEl.canvas);
+        }
+        if (session.arContext && session.arContext.arController) {
+          session.arSource.copyElementSizeTo(session.arContext.arController.canvas);
+        }
+      } catch (e) { /* session AR pas encore prête */ }
+    }
+
+    window.addEventListener('resize', recalerAR);
+    window.addEventListener('orientationchange', () => setTimeout(recalerAR, 300));
+    // Recalage initial une fois le flux vidéo prêt
+    window.addEventListener('arjs-video-loaded', () => setTimeout(recalerAR, 100));
+    window.addEventListener('load', () => setTimeout(recalerAR, 1000));
 
     // ── Lien cliquable sur le contenu AR ─────────────────────────
     if (CONFIG.urlLienAR) {
