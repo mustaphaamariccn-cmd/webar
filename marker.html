@@ -181,102 +181,26 @@
     <div class="badge">Compatible AR.js</div>
 
     <!--
-      Le marqueur Hiro est le marqueur de référence d'AR.js.
-      Il est généré ici directement en SVG inline — pas besoin de fichier externe.
+      Image officielle du marqueur Hiro — chargée directement depuis le CDN AR.js.
+      C'est l'image exacte qu'AR.js utilise pour la détection.
       Imprimez-le sur une feuille blanche, en couleur ou N&B.
       Taille minimale recommandée : 8 cm × 8 cm.
     -->
     <div class="marker-frame">
       <!--
-        SVG du marqueur Hiro — représentation fidèle du pattern standard
-        Source : https://github.com/AR-js-org/AR.js
+        MARQUEUR HIRO OFFICIEL — Image source AR.js
+        NE PAS modifier cette image, elle doit être exactement celle-ci pour être reconnue.
       -->
-      <svg id="hiro-marker"
-           viewBox="0 0 200 200"
-           width="200" height="200"
-           xmlns="http://www.w3.org/2000/svg"
-           style="display:block; image-rendering: pixelated;">
 
-        <!-- Fond blanc -->
-        <rect width="200" height="200" fill="white"/>
-
-        <!-- Bordure noire extérieure -->
-        <rect x="0"   y="0"   width="200" height="200" fill="black"/>
-        <!-- Zone blanche intérieure -->
-        <rect x="14"  y="14"  width="172" height="172" fill="white"/>
-        <!-- Deuxième bordure noire -->
-        <rect x="20"  y="20"  width="160" height="160" fill="black"/>
-        <!-- Zone interne blanche -->
-        <rect x="30"  y="30"  width="140" height="140" fill="white"/>
-
-        <!--
-          Motif Hiro interne (grille 6×6 de pixels noirs/blancs)
-          Rendu pixel-art à partir du pattern binaire officiel
-        -->
-        <!-- Ligne 1 -->
-        <rect x="30" y="30" width="20" height="20" fill="black"/>
-        <rect x="50" y="30" width="20" height="20" fill="white"/>
-        <rect x="70" y="30" width="20" height="20" fill="black"/>
-        <rect x="90" y="30" width="20" height="20" fill="black"/>
-        <rect x="110" y="30" width="20" height="20" fill="white"/>
-        <rect x="130" y="30" width="20" height="20" fill="black"/>
-        <rect x="150" y="30" width="20" height="20" fill="black"/>
-
-        <!-- Ligne 2 -->
-        <rect x="30" y="50" width="20" height="20" fill="white"/>
-        <rect x="50" y="50" width="20" height="20" fill="black"/>
-        <rect x="70" y="50" width="20" height="20" fill="white"/>
-        <rect x="90" y="50" width="20" height="20" fill="white"/>
-        <rect x="110" y="50" width="20" height="20" fill="black"/>
-        <rect x="130" y="50" width="20" height="20" fill="white"/>
-        <rect x="150" y="50" width="20" height="20" fill="white"/>
-
-        <!-- Ligne 3 -->
-        <rect x="30" y="70" width="20" height="20" fill="black"/>
-        <rect x="50" y="70" width="20" height="20" fill="white"/>
-        <rect x="70" y="70" width="20" height="20" fill="black"/>
-        <rect x="90" y="70" width="20" height="20" fill="black"/>
-        <rect x="110" y="70" width="20" height="20" fill="white"/>
-        <rect x="130" y="70" width="20" height="20" fill="black"/>
-        <rect x="150" y="70" width="20" height="20" fill="black"/>
-
-        <!-- Ligne 4 -->
-        <rect x="30" y="90" width="20" height="20" fill="white"/>
-        <rect x="50" y="90" width="20" height="20" fill="black"/>
-        <rect x="70" y="90" width="20" height="20" fill="white"/>
-        <rect x="90" y="90" width="20" height="20" fill="black"/>
-        <rect x="110" y="90" width="20" height="20" fill="white"/>
-        <rect x="130" y="90" width="20" height="20" fill="black"/>
-        <rect x="150" y="90" width="20" height="20" fill="white"/>
-
-        <!-- Ligne 5 -->
-        <rect x="30" y="110" width="20" height="20" fill="black"/>
-        <rect x="50" y="110" width="20" height="20" fill="white"/>
-        <rect x="70" y="110" width="20" height="20" fill="black"/>
-        <rect x="90" y="110" width="20" height="20" fill="white"/>
-        <rect x="110" y="110" width="20" height="20" fill="black"/>
-        <rect x="130" y="110" width="20" height="20" fill="white"/>
-        <rect x="150" y="110" width="20" height="20" fill="black"/>
-
-        <!-- Ligne 6 -->
-        <rect x="30" y="130" width="20" height="20" fill="white"/>
-        <rect x="50" y="130" width="20" height="20" fill="black"/>
-        <rect x="70" y="130" width="20" height="20" fill="white"/>
-        <rect x="90" y="130" width="20" height="20" fill="black"/>
-        <rect x="110" y="130" width="20" height="20" fill="white"/>
-        <rect x="130" y="130" width="20" height="20" fill="black"/>
-        <rect x="150" y="130" width="20" height="20" fill="white"/>
-
-        <!-- Ligne 7 -->
-        <rect x="30" y="150" width="20" height="20" fill="black"/>
-        <rect x="50" y="150" width="20" height="20" fill="white"/>
-        <rect x="70" y="150" width="20" height="20" fill="black"/>
-        <rect x="90" y="150" width="20" height="20" fill="black"/>
-        <rect x="110" y="150" width="20" height="20" fill="white"/>
-        <rect x="130" y="150" width="20" height="20" fill="black"/>
-        <rect x="150" y="150" width="20" height="20" fill="black"/>
-
-      </svg>
+      <!-- Image officielle Hiro chargée depuis le CDN AR.js — pattern exact garanti -->
+      <img
+        src="https://raw.githack.com/AR-js-org/AR.js/master/data/images/hiro.png"
+        alt="Marqueur Hiro AR"
+        width="200"
+        height="200"
+        style="display:block; image-rendering: pixelated;"
+        onerror="this.src='https://jeromeetienne.github.io/AR.js/data/images/hiro.png'"
+      />
     </div>
 
     <p>
