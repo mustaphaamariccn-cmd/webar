@@ -1,0 +1,30 @@
+{
+  "version": 1,
+  "generated": "2026-07-07T23:08:27.319Z",
+  "experiences": [
+    {
+      "name": "experience-1",
+      "targetIndex": 0,
+      "type": "image",
+      "src": "media/test-content.png",
+      "imageAspect": 1.25,
+      "contentAspect": 0.5625,
+      "scale": 1,
+      "offsetX": 0,
+      "offsetY": 0,
+      "opacity": 1
+    },
+    {
+      "name": "experience-2",
+      "targetIndex": 1,
+      "type": "video",
+      "src": "media/pop-corn-video.mp4",
+      "imageAspect": 1.2884,
+      "contentAspect": 1.2873,
+      "scale": 0.96,
+      "offsetX": 0,
+      "offsetY": 0,
+      "opacity": 0.75
+    }
+  ]
+}
