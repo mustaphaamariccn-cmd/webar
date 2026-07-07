@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Studio WebAR — Créateur d'expériences</title>
+
+  <!-- JSZip : création du pack d'export -->
+  <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --accent: #E74C3C;
+      --dark: #2C3E50;
+      --bg: #f0f2f5;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+      background: var(--bg);
+      color: #222;
+      padding: 24px 16px 64px;
+    }
+
+    header { text-align: center; margin-bottom: 28px; }
+    header h1 { font-size: 26px; }
+    header p { color: #666; font-size: 14px; margin-top: 6px; max-width: 640px; margin-left: auto; margin-right: auto; line-height: 1.5; }
+
+    .wrap { max-width: 1100px; margin: 0 auto; display: flex; flex-direction: column; gap: 20px; }
+
+    .card {
+      background: #fff;
+      border-radius: 14px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.07);
+      padding: 22px;
+    }
+
+    .card h2 { font-size: 16px; margin-bottom: 12px; color: var(--dark); }
+    .card h2 .step {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 24px; height: 24px; border-radius: 50%;
+      background: var(--accent); color: #fff; font-size: 13px; margin-right: 8px;
+    }
+
+    /* ── Panneaux gauche / droite ── */
+    .panels { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    @media (max-width: 760px) { .panels { grid-template-columns: 1fr; } }
+
+    .dropzone {
+      border: 2px dashed #bbb;
+      border-radius: 10px;
+      min-height: 220px;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      text-align: center; color: #888; font-size: 14px;
+      cursor: pointer; padding: 16px;
+      transition: border-color .2s, background .2s;
+      position: relative; overflow: hidden;
+    }
+    .dropzone:hover, .dropzone.dragover { border-color: var(--accent); background: #fff7f6; }
+    .dropzone img, .dropzone video {
+      max-width: 100%; max-height: 260px; border-radius: 6px; display: block;
+    }
+    .dropzone .hint-big { font-size: 34px; margin-bottom: 8px; }
+    .file-meta { font-size: 12px; color: #777; margin-top: 10px; line-height: 1.5; }
+    .warn { color: #c0392b; font-weight: 600; }
+    .ok { color: #27ae60; font-weight: 600; }
+
+    /* ── Aperçu superposition ── */
+    #preview-stage {
+      position: relative; margin: 0 auto; max-width: 560px;
+      background: repeating-conic-gradient(#e8e8e8 0% 25%, #f8f8f8 0% 50%) 50%/20px 20px;
+      border-radius: 8px; overflow: hidden;
+      display: none;
+    }
+    #preview-ref { display: block; width: 100%; }
+    #preview-overlay {
+      position: absolute; left: 50%; top: 50%;
+      transform: translate(-50%, -50%);
+      pointer-events: none;
+      outline: 2px dashed rgba(231, 76, 60, 0.8);
+      outline-offset: 2px;
+    }
+
+    .sliders { display: grid; grid-template-columns: 1fr 1fr; gap: 14px 24px; margin-top: 18px; }
+    @media (max-width: 600px) { .sliders { grid-template-columns: 1fr; } }
+    .sliders label { font-size: 13px; color: #444; display: block; }
+    .sliders label span.val { float: right; color: var(--accent); font-weight: 600; }
+    .sliders input[type=range] { width: 100%; margin-top: 6px; accent-color: var(--accent); }
+
+    .name-row { margin-top: 18px; }
+    .name-row input {
+      width: 100%; padding: 10px 12px; border: 1px solid #ccc; border-radius: 8px; font-size: 14px;
+    }
+
+    /* ── Boutons ── */
+    .btn {
+      display: inline-block; border: none; cursor: pointer;
+      background: var(--dark); color: #fff;
+      padding: 12px 26px; border-radius: 8px; font-size: 15px; font-weight: 600;
+      transition: background .2s;
+    }
+    .btn:hover { background: #1a252f; }
+    .btn.accent { background: var(--accent); }
+    .btn.accent:hover { background: #c0392b; }
+    .btn:disabled { background: #aaa; cursor: not-allowed; }
+    .btn.small { padding: 6px 14px; font-size: 13px; }
+
+    /* ── Liste d'expériences ── */
+    #exp-list { display: flex; flex-direction: column; gap: 10px; }
+    .exp-item {
+      display: flex; align-items: center; gap: 14px;
+      background: #fafafa; border: 1px solid #eee; border-radius: 10px; padding: 10px 14px;
+    }
+    .exp-item img.thumb { width: 54px; height: 54px; object-fit: cover; border-radius: 6px; }
+    .exp-item .info { flex: 1; font-size: 13px; line-height: 1.5; }
+    .exp-item .info b { font-size: 14px; }
+    .empty-list { color: #999; font-size: 14px; text-align: center; padding: 12px; }
+
+    /* ── Génération ── */
+    #progress-wrap { display: none; margin-top: 16px; }
+    #progress-bar-bg { background: #eee; border-radius: 8px; height: 14px; overflow: hidden; }
+    #progress-bar { background: var(--accent); height: 100%; width: 0%; transition: width .3s; }
+    #progress-label { font-size: 13px; color: #666; margin-top: 6px; }
+
+    #result-box { display: none; margin-top: 16px; background: #eafaf1; border: 1px solid #b8e6cd;
+      border-radius: 10px; padding: 16px; font-size: 14px; line-height: 1.7; }
+
+    .note { font-size: 12.5px; color: #777; line-height: 1.6; margin-top: 12px; }
+    .note code { background: #f0f0f0; padding: 1px 5px; border-radius: 4px; }
+
+    a.back { color: var(--dark); font-size: 13px; text-decoration: none; display: inline-block; margin-bottom: 14px; }
+  </style>
+</head>
+<body>
+
+<div class="wrap">
+  <a class="back" href="index.html">← Retour</a>
+
+  <header>
+    <h1>🎬 Studio WebAR</h1>
+    <p>Créez une expérience de réalité augmentée : à gauche votre <b>image de référence</b>
+      (affiche, photo…), à droite la <b>vidéo ou l'image</b> qui s'y superposera.
+      Le tracking suit les mouvements du téléphone : perspective, inclinaison, distance.</p>
+  </header>
+
+  <!-- ═══════════ ÉTAPE 1 & 2 : LES DEUX PANNEAUX ═══════════ -->
+  <div class="panels">
+
+    <!-- Panneau GAUCHE : image de référence -->
+    <div class="card">
+      <h2><span class="step">1</span>Image de référence</h2>
+      <div class="dropzone" id="dz-ref">
+        <div class="hint-big">🖼️</div>
+        <div>Déposez ici l'image qui sera <b>scannée</b><br>(JPG ou PNG) ou cliquez pour choisir</div>
+      </div>
+      <input type="file" id="file-ref" accept="image/jpeg,image/png,image/webp" hidden>
+      <div class="file-meta" id="meta-ref"></div>
+      <div class="note">💡 Une bonne image de tracking est <b>riche en détails et contrastes</b>,
+        d'au moins 480 px de large. Évitez les aplats de couleur, les symétries et les reflets.</div>
+    </div>
+
+    <!-- Panneau DROIT : contenu superposé -->
+    <div class="card">
+      <h2><span class="step">2</span>Vidéo ou image à superposer</h2>
+      <div class="dropzone" id="dz-content">
+        <div class="hint-big">🎞️</div>
+        <div>Déposez ici la <b>vidéo MP4</b> ou l'<b>image</b><br>qui apparaîtra en AR</div>
+      </div>
+      <input type="file" id="file-content" accept="video/mp4,video/webm,image/png,image/jpeg,image/gif,image/webp" hidden>
+      <div class="file-meta" id="meta-content"></div>
+      <div class="note">💡 Vidéo : <b>MP4 (H.264)</b>, idéalement &lt; 20 Mo. Elle sera lue en boucle,
+        sans son au démarrage (contrainte des navigateurs mobiles — un bouton 🔊 permet de l'activer).
+        GIF animé : préférez une conversion en MP4.</div>
+    </div>
+  </div>
+
+  <!-- ═══════════ ÉTAPE 3 : SUPERPOSITION ═══════════ -->
+  <div class="card">
+    <h2><span class="step">3</span>Réglage de la superposition</h2>
+    <div id="preview-placeholder" class="empty-list">Chargez une image et un contenu pour régler leur alignement.</div>
+
+    <div id="preview-stage">
+      <img id="preview-ref" alt="">
+      <div id="preview-overlay"></div>
+    </div>
+
+    <div class="sliders" id="sliders" style="display:none">
+      <label>Taille <span class="val" id="v-scale">100 %</span>
+        <input type="range" id="s-scale" min="10" max="300" value="100"></label>
+      <label>Opacité <span class="val" id="v-opacity">100 %</span>
+        <input type="range" id="s-opacity" min="10" max="100" value="100"></label>
+      <label>Décalage horizontal <span class="val" id="v-ox">0</span>
+        <input type="range" id="s-ox" min="-100" max="100" value="0"></label>
+      <label>Décalage vertical <span class="val" id="v-oy">0</span>
+        <input type="range" id="s-oy" min="-100" max="100" value="0"></label>
+    </div>
+
+    <div class="name-row">
+      <input type="text" id="exp-name" placeholder="Nom de l'expérience (ex. affiche-fete-paroisse)" maxlength="40">
+    </div>
+
+    <div style="margin-top:16px">
+      <button class="btn accent" id="btn-add" disabled>➕ Ajouter à la liste</button>
+    </div>
+  </div>
+
+  <!-- ═══════════ ÉTAPE 4 : LISTE ═══════════ -->
+  <div class="card">
+    <h2><span class="step">4</span>Expériences du projet</h2>
+    <div id="exp-list"><div class="empty-list">Aucune expérience pour l'instant.</div></div>
+  </div>
+
+  <!-- ═══════════ ÉTAPE 5 : GÉNÉRATION ═══════════ -->
+  <div class="card">
+    <h2><span class="step">5</span>Générer le pack à publier</h2>
+    <p style="font-size:14px; color:#555; line-height:1.6; margin-bottom:14px">
+      La compilation analyse vos images de référence pour créer le fichier de tracking
+      (<code>targets.mind</code>). Elle prend <b>20 à 60 secondes par image</b> — c'est normal.
+    </p>
+    <button class="btn" id="btn-generate" disabled>⚙️ Compiler et télécharger le pack</button>
+
+    <div id="progress-wrap">
+      <div id="progress-bar-bg"><div id="progress-bar"></div></div>
+      <div id="progress-label">Préparation…</div>
+    </div>
+
+    <div id="result-box">
+      ✅ <b>Pack généré !</b> Le fichier <code>webar-pack.zip</code> a été téléchargé.<br>
+      Décompressez-le et placez son contenu dans le dossier <code>assets/</code> du site
+      (le zip contient <code>targets.mind</code>, <code>experiences.json</code> et <code>media/</code>).<br>
+      L'expérience sera alors visible sur <a href="ar.html"><b>ar.html</b></a> 🎉
+    </div>
+
+    <div class="note">Le studio fonctionne entièrement dans votre navigateur :
+      aucune image ni vidéo n'est envoyée sur un serveur.</div>
+  </div>
+</div>
+
+<!-- ═══════════ LOGIQUE DU STUDIO ═══════════ -->
+<script type="module">
+  // Compilateur MindAR (tracking d'image) — chargé en module ES
+  import { Compiler } from "https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image.prod.js";
+
+  // ── État ──────────────────────────────────────────────
+  let refImage = null;   // { el, file, width, height, name }
+  let content  = null;   // { file, url, type, width, height, name }
+  const experiences = []; // liste des expériences ajoutées
+
+  const $ = (id) => document.getElementById(id);
+
+  // ── Gestion générique d'une dropzone ──────────────────
+  function setupDropzone(dzId, inputId, onFile) {
+    const dz = $(dzId), input = $(inputId);
+    dz.addEventListener('click', () => input.click());
+    input.addEventListener('change', () => input.files[0] && onFile(input.files[0]));
+    dz.addEventListener('dragover', (e) => { e.preventDefault(); dz.classList.add('dragover'); });
+    dz.addEventListener('dragleave', () => dz.classList.remove('dragover'));
+    dz.addEventListener('drop', (e) => {
+      e.preventDefault(); dz.classList.remove('dragover');
+      e.dataTransfer.files[0] && onFile(e.dataTransfer.files[0]);
+    });
+  }
+
+  // ── Panneau 1 : image de référence ────────────────────
+  setupDropzone('dz-ref', 'file-ref', (file) => {
+    if (!file.type.startsWith('image/')) return alert('Choisissez une image (JPG/PNG).');
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      refImage = { el: img, file, width: img.naturalWidth, height: img.naturalHeight, name: file.name };
+      $('dz-ref').innerHTML = '';
+      img.style.maxWidth = '100%'; img.style.maxHeight = '260px'; img.style.borderRadius = '6px';
+      $('dz-ref').appendChild(img);
+      const small = img.naturalWidth < 480;
+      $('meta-ref').innerHTML =
+        `📄 ${file.name} — ${img.naturalWidth}×${img.naturalHeight}px ` +
+        (small ? '<span class="warn">⚠ image petite : le tracking sera moins fiable (min. conseillé : 480 px)</span>'
+               : '<span class="ok">✓ taille suffisante</span>');
+      updatePreview(); updateButtons();
+    };
+    img.src = url;
+  });
+
+  // ── Panneau 2 : contenu à superposer ──────────────────
+  setupDropzone('dz-content', 'file-content', (file) => {
+    const isVideo = file.type.startsWith('video/');
+    const isImage = file.type.startsWith('image/');
+    if (!isVideo && !isImage) return alert('Choisissez une vidéo MP4 ou une image.');
+    const url = URL.createObjectURL(file);
+
+    if (isVideo) {
+      const v = document.createElement('video');
+      v.src = url; v.muted = true; v.loop = true; v.playsInline = true; v.autoplay = true;
+      v.onloadedmetadata = () => {
+        content = { file, url, type: 'video', width: v.videoWidth, height: v.videoHeight, name: file.name };
+        $('dz-content').innerHTML = ''; $('dz-content').appendChild(v); v.play().catch(()=>{});
+        $('meta-content').innerHTML =
+          `🎞️ ${file.name} — ${v.videoWidth}×${v.videoHeight}px · ${(file.size/1048576).toFixed(1)} Mo ` +
+          (file.size > 40*1048576 ? '<span class="warn">⚠ fichier lourd : long à charger sur mobile</span>' : '<span class="ok">✓</span>');
+        updatePreview(); updateButtons();
+      };
+    } else {
+      const img = new Image();
+      img.onload = () => {
+        content = { file, url, type: 'image', width: img.naturalWidth, height: img.naturalHeight, name: file.name };
+        $('dz-content').innerHTML = ''; $('dz-content').appendChild(img);
+        const gifNote = file.type === 'image/gif'
+          ? ' <span class="warn">⚠ GIF : seule la 1ʳᵉ image sera animée en AR — convertissez en MP4 pour l\'animation</span>' : '';
+        $('meta-content').innerHTML = `🖼️ ${file.name} — ${img.naturalWidth}×${img.naturalHeight}px${gifNote}`;
+        updatePreview(); updateButtons();
+      };
+      img.src = url;
+    }
+  });
+
+  // ── Aperçu de superposition ────────────────────────────
+  const S = { scale: 1, ox: 0, oy: 0, opacity: 1 };
+
+  const sliderDefs = [
+    ['s-scale', 'v-scale', (v) => { S.scale = v/100;  return v + ' %'; }],
+    ['s-opacity','v-opacity',(v) => { S.opacity = v/100; return v + ' %'; }],
+    ['s-ox', 'v-ox', (v) => { S.ox = v/100; return v; }],
+    ['s-oy', 'v-oy', (v) => { S.oy = v/100; return v; }],
+  ];
+  sliderDefs.forEach(([sid, vid, apply]) => {
+    $(sid).addEventListener('input', (e) => {
+      $(vid).textContent = apply(+e.target.value);
+      positionOverlay();
+    });
+  });
+
+  function updatePreview() {
+    if (!refImage || !content) return;
+    $('preview-placeholder').style.display = 'none';
+    $('preview-stage').style.display = 'block';
+    $('sliders').style.display = 'grid';
+    $('preview-ref').src = refImage.el.src;
+
+    const ov = $('preview-overlay');
+    ov.innerHTML = '';
+    let el;
+    if (content.type === 'video') {
+      el = document.createElement('video');
+      el.src = content.url; el.muted = true; el.loop = true; el.playsInline = true; el.autoplay = true;
+      el.play().catch(()=>{});
+    } else {
+      el = document.createElement('img');
+      el.src = content.url;
+    }
+    el.style.width = '100%'; el.style.display = 'block';
+    ov.appendChild(el);
+    // repositionne une fois l'image de référence affichée
+    requestAnimationFrame(positionOverlay);
+  }
+
+  function positionOverlay() {
+    if (!refImage || !content) return;
+    const stageW = $('preview-ref').clientWidth;      // largeur affichée de l'image de réf.
+    const w = stageW * S.scale;                       // largeur du contenu (unité = largeur image)
+    const h = w * (content.height / content.width);
+    const ov = $('preview-overlay');
+    ov.style.width  = w + 'px';
+    ov.style.height = h + 'px';
+    // décalages en fraction de la largeur de l'image ; Y positif = vers le haut (comme en AR)
+    ov.style.left = `calc(50% + ${S.ox * stageW}px)`;
+    ov.style.top  = `calc(50% - ${S.oy * stageW}px)`;
+    ov.style.opacity = S.opacity;
+  }
+  window.addEventListener('resize', positionOverlay);
+
+  // ── Ajout à la liste ───────────────────────────────────
+  function updateButtons() {
+    $('btn-add').disabled = !(refImage && content);
+    $('btn-generate').disabled = experiences.length === 0;
+  }
+
+  function sanitize(name) {
+    return name.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
+               .replace(/[^a-z0-9._-]+/g, '-').replace(/^-+|-+$/g, '');
+  }
+
+  $('btn-add').addEventListener('click', () => {
+    const rawName = $('exp-name').value.trim() || `experience-${experiences.length + 1}`;
+    const exp = {
+      name: sanitize(rawName),
+      imgEl: refImage.el, imgName: refImage.name,
+      imageAspect: refImage.height / refImage.width,
+      contentFile: content.file,
+      contentName: sanitize(content.name),
+      type: content.type,
+      contentAspect: content.height / content.width,
+      scale: S.scale, offsetX: S.ox, offsetY: S.oy, opacity: S.opacity,
+      thumb: refImage.el.src,
+    };
+    experiences.push(exp);
+    renderList();
+
+    // réinitialise les panneaux pour l'expérience suivante
+    refImage = null; content = null;
+    $('dz-ref').innerHTML = '<div class="hint-big">🖼️</div><div>Déposez ici l\'image qui sera <b>scannée</b><br>(JPG ou PNG) ou cliquez pour choisir</div>';
+    $('dz-content').innerHTML = '<div class="hint-big">🎞️</div><div>Déposez ici la <b>vidéo MP4</b> ou l\'<b>image</b><br>qui apparaîtra en AR</div>';
+    $('meta-ref').innerHTML = ''; $('meta-content').innerHTML = '';
+    $('exp-name').value = '';
+    $('preview-stage').style.display = 'none'; $('sliders').style.display = 'none';
+    $('preview-placeholder').style.display = 'block';
+    $('file-ref').value = ''; $('file-content').value = '';
+    updateButtons();
+  });
+
+  function renderList() {
+    const list = $('exp-list');
+    if (experiences.length === 0) {
+      list.innerHTML = '<div class="empty-list">Aucune expérience pour l\'instant.</div>';
+      return;
+    }
+    list.innerHTML = '';
+    experiences.forEach((exp, i) => {
+      const item = document.createElement('div');
+      item.className = 'exp-item';
+      item.innerHTML = `
+        <img class="thumb" src="${exp.thumb}" alt="">
+        <div class="info"><b>${exp.name}</b><br>
+          ${exp.type === 'video' ? '🎞️ vidéo' : '🖼️ image'} · ${exp.contentName}
+          · taille ${(exp.scale*100).toFixed(0)} %</div>
+        <button class="btn small" data-i="${i}">🗑 Retirer</button>`;
+      item.querySelector('button').addEventListener('click', () => {
+        experiences.splice(i, 1); renderList(); updateButtons();
+      });
+      list.appendChild(item);
+    });
+    updateButtons();
+  }
+
+  // ── Compilation + export ZIP ───────────────────────────
+  $('btn-generate').addEventListener('click', async () => {
+    const btn = $('btn-generate');
+    btn.disabled = true;
+    $('result-box').style.display = 'none';
+    $('progress-wrap').style.display = 'block';
+    $('progress-label').textContent = 'Compilation des images de tracking… (cela peut prendre une minute)';
+
+    try {
+      // 1. Compile toutes les images de référence en un seul fichier .mind
+      const compiler = new Compiler();
+      await compiler.compileImageTargets(
+        experiences.map((e) => e.imgEl),
+        (progress) => {
+          $('progress-bar').style.width = progress.toFixed(0) + '%';
+          $('progress-label').textContent = `Analyse des images : ${progress.toFixed(0)} %`;
+        }
+      );
+      const mindBuffer = await compiler.exportData();
+
+      // 2. Construit la configuration lue par ar.html
+      const config = {
+        version: 1,
+        generated: new Date().toISOString(),
+        experiences: experiences.map((e, i) => ({
+          name: e.name,
+          targetIndex: i,
+          type: e.type,
+          src: 'media/' + e.contentName,
+          imageAspect: +e.imageAspect.toFixed(4),
+          contentAspect: +e.contentAspect.toFixed(4),
+          scale: e.scale, offsetX: e.offsetX, offsetY: e.offsetY, opacity: e.opacity,
+        })),
+      };
+
+      // 3. Pack ZIP : targets.mind + experiences.json + media/
+      $('progress-label').textContent = 'Création du pack…';
+      const zip = new JSZip();
+      zip.file('targets.mind', mindBuffer);
+      zip.file('experiences.json', JSON.stringify(config, null, 2));
+      const media = zip.folder('media');
+      experiences.forEach((e) => media.file(e.contentName, e.contentFile));
+
+      const blob = await zip.generateAsync({ type: 'blob' }, (m) => {
+        $('progress-bar').style.width = m.percent.toFixed(0) + '%';
+      });
+
+      // 4. Téléchargement
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'webar-pack.zip';
+      a.click();
+
+      $('progress-wrap').style.display = 'none';
+      $('result-box').style.display = 'block';
+    } catch (err) {
+      console.error(err);
+      $('progress-label').innerHTML =
+        '<span class="warn">❌ Erreur pendant la compilation : ' + err.message + '</span>';
+    } finally {
+      btn.disabled = experiences.length === 0;
+    }
+  });
+</script>
+
+</body>
+</html>

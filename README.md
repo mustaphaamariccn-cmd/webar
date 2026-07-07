@@ -2,7 +2,7 @@
 
 Expérience AR déclenchée par QR code, 100% dans le navigateur mobile. Aucune app à installer. Fonctionne sur Chrome Android et Safari iOS.
 
-**Stack :** HTML/JS pur · A-Frame 1.4 · AR.js · Déployable sur GitHub Pages
+**Stack :** HTML/JS pur · A-Frame · AR.js (marqueur Hiro) · MindAR (tracking d'image) · Déployable sur GitHub Pages
 
 ---
 
@@ -10,14 +10,39 @@ Expérience AR déclenchée par QR code, 100% dans le navigateur mobile. Aucune 
 
 ```
 /
-├── index.html        ← Expérience AR principale (à ouvrir sur mobile)
+├── studio.html       ← 🎬 STUDIO : créer une expérience (image + vidéo superposée)
+├── ar.html           ← Lecteur AR des expériences du studio (tracking d'image 6DOF)
+├── index.html        ← Expérience AR classique au marqueur Hiro
 ├── marker.html       ← Marqueur Hiro à imprimer ou afficher
-├── qrcode.html       ← Générateur de QR code pointant vers index.html
+├── qrcode.html       ← Générateur de QR code
 ├── README.md         ← Ce fichier
-└── assets/           ← Vos médias (créez ce dossier)
-    ├── video.mp4     ← Votre vidéo AR (optionnel)
-    └── image.png     ← Votre image AR (optionnel)
+└── assets/           ← Généré par le studio (pack webar-pack.zip décompressé)
+    ├── targets.mind        ← Cibles de tracking compilées
+    ├── experiences.json    ← Configuration des expériences
+    └── media/              ← Vidéos et images superposées
 ```
+
+---
+
+## 🎬 Le Studio (recommandé)
+
+Le studio remplace le marqueur Hiro par le **tracking d'image naturelle** (MindAR) :
+votre affiche ou photo devient la cible, et la vidéo superposée suit les mouvements
+du téléphone — perspective, inclinaison, distance.
+
+### Workflow
+
+1. Ouvrez `https://votre-pseudo.github.io/nom-du-repo/studio.html`
+2. **Panneau gauche** : déposez l'image de référence (celle qui sera scannée)
+3. **Panneau droit** : déposez la vidéo MP4 ou l'image à superposer
+4. Réglez taille, position et opacité avec l'aperçu en direct
+5. Ajoutez autant d'expériences que voulu (plusieurs affiches → plusieurs vidéos)
+6. Cliquez **Compiler** : le fichier `webar-pack.zip` est téléchargé
+7. Décompressez-le dans le dossier `assets/` du dépôt et publiez sur GitHub
+8. L'expérience est visible sur `ar.html` — encodez cette URL dans votre QR code
+
+> La compilation se fait entièrement dans votre navigateur (20 à 60 s par image).
+> Aucun fichier n'est envoyé sur un serveur.
 
 ---
 
@@ -117,7 +142,11 @@ Pour déclencher l'AR sur votre propre flyer ou photo :
    <a-marker type="pattern" url="assets/mon-marqueur.patt">
    ```
 
-### Option B — Reconnaissance d'image naturelle NFT (plus puissant)
+### Option B — Reconnaissance d'image naturelle NFT (obsolète — utilisez le 🎬 Studio)
+
+> ⚠️ Cette méthode AR.js/NFT est conservée pour référence, mais le **Studio**
+> (`studio.html`, basé sur MindAR) fait la même chose en mieux : compilation dans
+> le navigateur, tracking plus stable, plusieurs images à la fois.
 
 La reconnaissance NFT (Natural Feature Tracking) permet de pointer sur n'importe quelle photo ou illustration riche en détails.
 

@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <title>Expérience AR</title>
+
+  <!-- A-Frame + MindAR (tracking d'image 6DOF : perspective, position, inclinaison) -->
+  <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
+
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; overflow: hidden; background: #000;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif; }
+
+    #ui-header {
+      position: fixed; top: 0; left: 0; right: 0; padding: 14px 16px;
+      background: linear-gradient(to bottom, rgba(0,0,0,0.75), transparent);
+      color: #fff; font-size: 15px; font-weight: 600; text-align: center;
+      z-index: 9999; pointer-events: none; letter-spacing: 0.3px;
+    }
+
+    #status-badge {
+      position: fixed; top: 50px; left: 50%; transform: translateX(-50%);
+      background: rgba(0,0,0,0.55); color: #fff; padding: 6px 16px;
+      border-radius: 20px; font-size: 13px; z-index: 9999; pointer-events: none;
+      transition: opacity .3s; backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
+      white-space: nowrap;
+    }
+
+    #btn-sound {
+      position: fixed; bottom: 24px; right: 20px; z-index: 9999;
+      background: rgba(0,0,0,0.6); color: #fff; border: none;
+      width: 52px; height: 52px; border-radius: 50%; font-size: 22px; cursor: pointer;
+      backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
+      display: none;
+    }
+
+    #error-box {
+      position: fixed; inset: 0; display: none; align-items: center; justify-content: center;
+      background: #111; color: #eee; z-index: 10000; padding: 32px; text-align: center;
+      font-size: 15px; line-height: 1.7;
+    }
+    #error-box a { color: #7EC8E3; }
+
+    a-scene { width: 100vw; height: 100vh; }
+  </style>
+</head>
+<body>
+
+  <div id="ui-header">📷 Expérience AR</div>
+  <div id="status-badge">⏳ Chargement des expériences…</div>
+  <button id="btn-sound" title="Activer le son">🔇</button>
+  <div id="error-box"><div id="error-msg"></div></div>
+
+  <!-- La scène A-Frame est construite dynamiquement à partir de assets/experiences.json -->
+
+  <script>
+    const badge = document.getElementById('status-badge');
+    const soundBtn = document.getElementById('btn-sound');
+
+    function fail(html) {
+      document.getElementById('error-msg').innerHTML = html;
+      document.getElementById('error-box').style.display = 'flex';
+    }
+
+    async function init() {
+      // ── 1. Charge la configuration générée par le studio ──
+      let config;
+      try {
+        const res = await fetch('assets/experiences.json', { cache: 'no-store' });
+        if (!res.ok) throw new Error(res.status);
+        config = await res.json();
+      } catch (e) {
+        return fail(`Aucune expérience publiée pour l'instant.<br><br>
+          Créez-en une dans le <a href="studio.html">🎬 Studio</a>, puis placez le contenu
+          du pack généré dans le dossier <b>assets/</b> du site.`);
+      }
+      if (!config.experiences || config.experiences.length === 0) {
+        return fail(`Le fichier de configuration est vide.<br>
+          Générez un pack dans le <a href="studio.html">🎬 Studio</a>.`);
+      }
+
+      // ── 2. Construit la scène AR ──
+      const scene = document.createElement('a-scene');
+      scene.setAttribute('mindar-image',
+        'imageTargetSrc: assets/targets.mind; maxTrack: 1; uiScanning: yes; uiLoading: yes; ' +
+        'filterMinCF: 0.0001; filterBeta: 0.01; missTolerance: 8; warmupTolerance: 2');
+      scene.setAttribute('color-space', 'sRGB');
+      scene.setAttribute('renderer', 'colorManagement: true; physicallyCorrectLights: true');
+      scene.setAttribute('vr-mode-ui', 'enabled: false');
+      scene.setAttribute('device-orientation-permission-ui', 'enabled: false');
+      scene.setAttribute('embedded', '');
+
+      const assets = document.createElement('a-assets');
+      assets.setAttribute('timeout', '30000');
+      scene.appendChild(assets);
+
+      const videos = [];
+
+      config.experiences.forEach((exp, i) => {
+        // ── Déclare l'asset (vidéo ou image) ──
+        let assetId = 'asset-' + i;
+        if (exp.type === 'video') {
+          const v = document.createElement('video');
+          v.id = assetId;
+          v.src = 'assets/' + exp.src;
+          v.setAttribute('preload', 'auto');
+          v.setAttribute('playsinline', ''); v.setAttribute('webkit-playsinline', '');
+          v.muted = true; v.loop = true; v.crossOrigin = 'anonymous';
+          assets.appendChild(v);
+          videos.push(v);
+        } else {
+          const img = document.createElement('img');
+          img.id = assetId;
+          img.src = 'assets/' + exp.src;
+          img.crossOrigin = 'anonymous';
+          assets.appendChild(img);
+        }
+
+        // ── Entité liée à la cible n° i ──
+        // Convention MindAR : la largeur de l'image de référence = 1 unité.
+        const target = document.createElement('a-entity');
+        target.setAttribute('mindar-image-target', 'targetIndex: ' + i);
+
+        const w = exp.scale;                       // largeur du contenu (en largeurs d'image)
+        const h = w * exp.contentAspect;           // hauteur selon le ratio du contenu
+        const plane = document.createElement(exp.type === 'video' ? 'a-video' : 'a-image');
+        plane.setAttribute('src', '#' + assetId);
+        plane.setAttribute('width', w);
+        plane.setAttribute('height', h);
+        plane.setAttribute('position', `${exp.offsetX} ${exp.offsetY} 0.01`);
+        plane.setAttribute('opacity', exp.opacity ?? 1);
+        target.appendChild(plane);
+
+        // ── Lecture vidéo pilotée par la détection ──
+        target.addEventListener('targetFound', () => {
+          badge.textContent = '✅ « ' + exp.name + ' » détectée';
+          badge.style.background = 'rgba(39,174,96,0.75)';
+          if (exp.type === 'video') {
+            const v = document.getElementById(assetId);
+            v.play().catch(() => {
+              document.addEventListener('touchstart', () => v.play(), { once: true });
+            });
+            soundBtn.style.display = 'block';
+          }
+        });
+        target.addEventListener('targetLost', () => {
+          badge.textContent = '🔍 Recherche d\'une image…';
+          badge.style.background = 'rgba(0,0,0,0.55)';
+          if (exp.type === 'video') document.getElementById(assetId).pause();
+        });
+
+        scene.appendChild(target);
+      });
+
+      // Caméra MindAR (ne pas modifier)
+      const camera = document.createElement('a-camera');
+      camera.setAttribute('position', '0 0 0');
+      camera.setAttribute('look-controls', 'enabled: false');
+      scene.appendChild(camera);
+
+      document.body.appendChild(scene);
+      badge.textContent = '🔍 Pointez la caméra vers une image de référence';
+
+      // ── 3. Bouton son (les vidéos démarrent muettes) ──
+      let soundOn = false;
+      soundBtn.addEventListener('click', () => {
+        soundOn = !soundOn;
+        videos.forEach((v) => { v.muted = !soundOn; });
+        soundBtn.textContent = soundOn ? '🔊' : '🔇';
+      });
+    }
+
+    init();
+  </script>
+
+</body>
+</html>
