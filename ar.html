@@ -13,8 +13,14 @@
 
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    html, body { height: 100%; overflow: hidden; background: #000;
+    /* IMPORTANT : ne JAMAIS mettre de fond opaque sur html/body.
+       MindAR insère le flux caméra en z-index négatif : un fond sur body
+       se peindrait PAR-DESSUS la caméra (écran noir). Le fond noir
+       d'attente est assuré par #backdrop, placé sous la caméra. */
+    html, body { height: 100%; overflow: hidden;
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif; }
+
+    #backdrop { position: fixed; inset: 0; background: #000; z-index: -3; }
 
     #ui-header {
       position: fixed; top: 0; left: 0; right: 0; padding: 14px 16px;
@@ -51,6 +57,7 @@
 </head>
 <body>
 
+  <div id="backdrop"></div>
   <div id="ui-header">📷 Expérience AR</div>
   <div id="status-badge">⏳ Chargement des expériences…</div>
   <button id="btn-sound" title="Activer le son">🔇</button>
