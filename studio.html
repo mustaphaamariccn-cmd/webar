@@ -26,7 +26,7 @@
 
     header { text-align: center; margin-bottom: 28px; }
     header h1 { font-size: 26px; }
-    header p { color: #666; font-size: 14px; margin-top: 6px; max-width: 640px; margin-left: auto; margin-right: auto; line-height: 1.5; }
+    header p { color: #666; font-size: 14px; margin-top: 6px; max-width: 680px; margin-left: auto; margin-right: auto; line-height: 1.5; }
 
     .wrap { max-width: 1100px; margin: 0 auto; display: flex; flex-direction: column; gap: 20px; }
 
@@ -44,44 +44,55 @@
       background: var(--accent); color: #fff; font-size: 13px; margin-right: 8px;
     }
 
-    /* ── Panneaux gauche / droite ── */
     .panels { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
     @media (max-width: 760px) { .panels { grid-template-columns: 1fr; } }
 
     .dropzone {
       border: 2px dashed #bbb;
       border-radius: 10px;
-      min-height: 220px;
+      min-height: 180px;
       display: flex; flex-direction: column; align-items: center; justify-content: center;
       text-align: center; color: #888; font-size: 14px;
       cursor: pointer; padding: 16px;
       transition: border-color .2s, background .2s;
-      position: relative; overflow: hidden;
     }
     .dropzone:hover, .dropzone.dragover { border-color: var(--accent); background: #fff7f6; }
-    .dropzone img, .dropzone video {
-      max-width: 100%; max-height: 260px; border-radius: 6px; display: block;
-    }
+    .dropzone img, .dropzone video { max-width: 100%; max-height: 220px; border-radius: 6px; display: block; }
     .dropzone .hint-big { font-size: 34px; margin-bottom: 8px; }
     .file-meta { font-size: 12px; color: #777; margin-top: 10px; line-height: 1.5; }
     .warn { color: #c0392b; font-weight: 600; }
     .ok { color: #27ae60; font-weight: 600; }
 
-    /* ── Aperçu superposition ── */
-    #preview-stage {
-      position: relative; margin: 0 auto; max-width: 560px;
-      background: repeating-conic-gradient(#e8e8e8 0% 25%, #f8f8f8 0% 50%) 50%/20px 20px;
-      border-radius: 8px; overflow: hidden;
-      display: none;
+    /* ── Puces de calques ── */
+    #layer-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+    .chip {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: #f2f2f2; border: 2px solid transparent; border-radius: 20px;
+      padding: 6px 12px; font-size: 13px; cursor: pointer; user-select: none;
     }
-    #preview-ref { display: block; width: 100%; }
-    #preview-overlay {
+    .chip.selected { border-color: var(--accent); background: #fff7f6; font-weight: 600; }
+    .chip .x { color: #999; font-weight: 700; padding: 0 2px; }
+    .chip .x:hover { color: var(--accent); }
+
+    /* ── Aperçu superposition ── */
+    #preview-outer {
+      display: none;
+      padding: 70px 90px;              /* marge pour voir les calques qui dépassent */
+      overflow: auto;
+    }
+    #preview-stage {
+      position: relative; margin: 0 auto; max-width: 480px;
+      background: repeating-conic-gradient(#e8e8e8 0% 25%, #f8f8f8 0% 50%) 50%/20px 20px;
+      border-radius: 4px;
+    }
+    #preview-ref { display: block; width: 100%; outline: 1px solid #999; }
+    .layer-overlay {
       position: absolute; left: 50%; top: 50%;
       transform: translate(-50%, -50%);
       pointer-events: none;
-      outline: 2px dashed rgba(231, 76, 60, 0.8);
-      outline-offset: 2px;
     }
+    .layer-overlay.selected { outline: 2px dashed rgba(231,76,60,.85); outline-offset: 2px; }
+    .layer-overlay video, .layer-overlay img, .layer-overlay canvas { width: 100%; display: block; }
 
     .sliders { display: grid; grid-template-columns: 1fr 1fr; gap: 14px 24px; margin-top: 18px; }
     @media (max-width: 600px) { .sliders { grid-template-columns: 1fr; } }
@@ -89,12 +100,21 @@
     .sliders label span.val { float: right; color: var(--accent); font-weight: 600; }
     .sliders input[type=range] { width: 100%; margin-top: 6px; accent-color: var(--accent); }
 
-    .name-row { margin-top: 18px; }
-    .name-row input {
-      width: 100%; padding: 10px 12px; border: 1px solid #ccc; border-radius: 8px; font-size: 14px;
+    /* ── Chroma key ── */
+    #chroma-box {
+      margin-top: 18px; padding: 14px 16px; border: 1px solid #eee; border-radius: 10px;
+      background: #fafafa;
     }
+    #chroma-box .head { display: flex; align-items: center; gap: 10px; font-size: 14px; font-weight: 600; color: var(--dark); }
+    #chroma-box input[type=checkbox] { width: 17px; height: 17px; accent-color: var(--accent); }
+    #chroma-controls { display: none; margin-top: 12px; }
+    #chroma-controls .row { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; font-size: 13px; color: #444; flex-wrap: wrap; }
+    #chroma-controls input[type=color] { width: 44px; height: 30px; border: 1px solid #ccc; border-radius: 6px; cursor: pointer; padding: 1px; }
+    .preset-swatch { width: 24px; height: 24px; border-radius: 6px; border: 1px solid #ccc; cursor: pointer; }
 
-    /* ── Boutons ── */
+    .name-row { margin-top: 18px; }
+    .name-row input { width: 100%; padding: 10px 12px; border: 1px solid #ccc; border-radius: 8px; font-size: 14px; }
+
     .btn {
       display: inline-block; border: none; cursor: pointer;
       background: var(--dark); color: #fff;
@@ -107,7 +127,6 @@
     .btn:disabled { background: #aaa; cursor: not-allowed; }
     .btn.small { padding: 6px 14px; font-size: 13px; }
 
-    /* ── Liste d'expériences ── */
     #exp-list { display: flex; flex-direction: column; gap: 10px; }
     .exp-item {
       display: flex; align-items: center; gap: 14px;
@@ -118,7 +137,6 @@
     .exp-item .info b { font-size: 14px; }
     .empty-list { color: #999; font-size: 14px; text-align: center; padding: 12px; }
 
-    /* ── Génération ── */
     #progress-wrap { display: none; margin-top: 16px; }
     #progress-bar-bg { background: #eee; border-radius: 8px; height: 14px; overflow: hidden; }
     #progress-bar { background: var(--accent); height: 100%; width: 0%; transition: width .3s; }
@@ -140,15 +158,14 @@
 
   <header>
     <h1>🎬 Studio WebAR</h1>
-    <p>Créez une expérience de réalité augmentée : à gauche votre <b>image de référence</b>
-      (affiche, photo…), à droite la <b>vidéo ou l'image</b> qui s'y superposera.
-      Le tracking suit les mouvements du téléphone : perspective, inclinaison, distance.</p>
+    <p>Créez une composition de réalité augmentée : une <b>image de référence</b> (affiche, photo…)
+      et un ou plusieurs <b>calques</b> (vidéos, images) qui s'y superposent — avec
+      <b>fond vert supprimable</b> (chroma key) et calques libres de <b>dépasser le cadre</b>.</p>
   </header>
 
-  <!-- ═══════════ ÉTAPE 1 & 2 : LES DEUX PANNEAUX ═══════════ -->
+  <!-- ═══════════ ÉTAPES 1 & 2 ═══════════ -->
   <div class="panels">
 
-    <!-- Panneau GAUCHE : image de référence -->
     <div class="card">
       <h2><span class="step">1</span>Image de référence</h2>
       <div class="dropzone" id="dz-ref">
@@ -161,40 +178,68 @@
         d'au moins 480 px de large. Évitez les aplats de couleur, les symétries et les reflets.</div>
     </div>
 
-    <!-- Panneau DROIT : contenu superposé -->
     <div class="card">
-      <h2><span class="step">2</span>Vidéo ou image à superposer</h2>
-      <div class="dropzone" id="dz-content">
+      <h2><span class="step">2</span>Calques (vidéos / images)</h2>
+      <div class="dropzone" id="dz-content" style="min-height:120px">
         <div class="hint-big">🎞️</div>
-        <div>Déposez ici la <b>vidéo MP4</b> ou l'<b>image</b><br>qui apparaîtra en AR</div>
+        <div>Déposez ici une <b>vidéo MP4</b> ou une <b>image</b><br>— chaque dépôt ajoute un calque</div>
       </div>
-      <input type="file" id="file-content" accept="video/mp4,video/webm,image/png,image/jpeg,image/gif,image/webp" hidden>
-      <div class="file-meta" id="meta-content"></div>
-      <div class="note">💡 Vidéo : <b>MP4 (H.264)</b>, idéalement &lt; 20 Mo. Elle sera lue en boucle,
-        sans son au démarrage (contrainte des navigateurs mobiles — un bouton 🔊 permet de l'activer).
-        GIF animé : préférez une conversion en MP4.</div>
+      <input type="file" id="file-content" accept="video/mp4,video/webm,image/png,image/jpeg,image/gif,image/webp" hidden multiple>
+      <div id="layer-chips"></div>
+      <div class="note">💡 Vidéo : <b>MP4 (H.264)</b>, idéalement &lt; 20 Mo, lue en boucle et sans son au
+        démarrage (bouton 🔊 dans le lecteur). Pour la transparence, filmez sur <b>fond vert</b> et activez
+        le chroma key à l'étape 3.</div>
     </div>
   </div>
 
-  <!-- ═══════════ ÉTAPE 3 : SUPERPOSITION ═══════════ -->
+  <!-- ═══════════ ÉTAPE 3 : COMPOSITION ═══════════ -->
   <div class="card">
-    <h2><span class="step">3</span>Réglage de la superposition</h2>
-    <div id="preview-placeholder" class="empty-list">Chargez une image et un contenu pour régler leur alignement.</div>
+    <h2><span class="step">3</span>Composition — réglage du calque sélectionné</h2>
+    <div id="preview-placeholder" class="empty-list">Chargez une image de référence et au moins un calque.</div>
 
-    <div id="preview-stage">
-      <img id="preview-ref" alt="">
-      <div id="preview-overlay"></div>
+    <div id="preview-outer">
+      <div id="preview-stage">
+        <img id="preview-ref" alt="">
+        <!-- calques insérés ici -->
+      </div>
     </div>
 
     <div class="sliders" id="sliders" style="display:none">
       <label>Taille <span class="val" id="v-scale">100 %</span>
-        <input type="range" id="s-scale" min="10" max="300" value="100"></label>
+        <input type="range" id="s-scale" min="10" max="400" value="100"></label>
       <label>Opacité <span class="val" id="v-opacity">100 %</span>
         <input type="range" id="s-opacity" min="10" max="100" value="100"></label>
       <label>Décalage horizontal <span class="val" id="v-ox">0</span>
-        <input type="range" id="s-ox" min="-100" max="100" value="0"></label>
+        <input type="range" id="s-ox" min="-200" max="200" value="0"></label>
       <label>Décalage vertical <span class="val" id="v-oy">0</span>
-        <input type="range" id="s-oy" min="-100" max="100" value="0"></label>
+        <input type="range" id="s-oy" min="-200" max="200" value="0"></label>
+    </div>
+
+    <!-- ── Chroma key ── -->
+    <div id="chroma-box" style="display:none">
+      <div class="head">
+        <input type="checkbox" id="chroma-on">
+        <label for="chroma-on">🟩 Supprimer une couleur (chroma key / fond vert)</label>
+      </div>
+      <div id="chroma-controls">
+        <div class="row">
+          Couleur à supprimer :
+          <input type="color" id="chroma-color" value="#00ff00">
+          <span style="color:#888">Préréglages :</span>
+          <div class="preset-swatch" style="background:#00ff00" data-c="#00ff00" title="Vert"></div>
+          <div class="preset-swatch" style="background:#0000ff" data-c="#0000ff" title="Bleu"></div>
+          <div class="preset-swatch" style="background:#ffffff" data-c="#ffffff" title="Blanc"></div>
+          <div class="preset-swatch" style="background:#000000" data-c="#000000" title="Noir"></div>
+        </div>
+        <div class="row" style="display:block">
+          <label style="font-size:13px">Tolérance <span class="val" id="v-sim" style="float:right;color:var(--accent);font-weight:600">40</span>
+            <input type="range" id="s-sim" min="1" max="90" value="40" style="width:100%;margin-top:6px;accent-color:var(--accent)"></label>
+        </div>
+        <div class="row" style="display:block">
+          <label style="font-size:13px">Adoucissement des bords <span class="val" id="v-smo" style="float:right;color:var(--accent);font-weight:600">10</span>
+            <input type="range" id="s-smo" min="0" max="50" value="10" style="width:100%;margin-top:6px;accent-color:var(--accent)"></label>
+        </div>
+      </div>
     </div>
 
     <div class="name-row">
@@ -202,7 +247,7 @@
     </div>
 
     <div style="margin-top:16px">
-      <button class="btn accent" id="btn-add" disabled>➕ Ajouter à la liste</button>
+      <button class="btn accent" id="btn-add" disabled>➕ Ajouter l'expérience à la liste</button>
     </div>
   </div>
 
@@ -244,135 +289,250 @@
   import { Compiler } from "https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image.prod.js";
 
   // ── État ──────────────────────────────────────────────
-  let refImage = null;   // { el, file, width, height, name }
-  let content  = null;   // { file, url, type, width, height, name }
-  const experiences = []; // liste des expériences ajoutées
+  let refImage = null;     // { el, file, width, height, name }
+  let layers = [];         // calques de l'expérience en cours
+  let selected = -1;       // index du calque sélectionné
+  const experiences = [];  // expériences finalisées
 
   const $ = (id) => document.getElementById(id);
 
-  // ── Gestion générique d'une dropzone ──────────────────
+  function newLayer(file, url, type, w, h) {
+    return {
+      file, url, type, width: w, height: h, name: file.name,
+      scale: 1, ox: 0, oy: 0, opacity: 1,
+      chroma: { enabled: false, color: '#00ff00', similarity: 0.4, smoothness: 0.1 },
+      _domWrap: null, _domMedia: null, _srcEl: null, _needsRedraw: true,
+    };
+  }
+
+  // ── Dropzones ─────────────────────────────────────────
   function setupDropzone(dzId, inputId, onFile) {
     const dz = $(dzId), input = $(inputId);
     dz.addEventListener('click', () => input.click());
-    input.addEventListener('change', () => input.files[0] && onFile(input.files[0]));
+    input.addEventListener('change', () => { [...input.files].forEach(onFile); input.value = ''; });
     dz.addEventListener('dragover', (e) => { e.preventDefault(); dz.classList.add('dragover'); });
     dz.addEventListener('dragleave', () => dz.classList.remove('dragover'));
     dz.addEventListener('drop', (e) => {
       e.preventDefault(); dz.classList.remove('dragover');
-      e.dataTransfer.files[0] && onFile(e.dataTransfer.files[0]);
+      [...e.dataTransfer.files].forEach(onFile);
     });
   }
 
-  // ── Panneau 1 : image de référence ────────────────────
+  // ── 1. Image de référence ─────────────────────────────
   setupDropzone('dz-ref', 'file-ref', (file) => {
     if (!file.type.startsWith('image/')) return alert('Choisissez une image (JPG/PNG).');
-    const url = URL.createObjectURL(file);
     const img = new Image();
     img.onload = () => {
       refImage = { el: img, file, width: img.naturalWidth, height: img.naturalHeight, name: file.name };
       $('dz-ref').innerHTML = '';
-      img.style.maxWidth = '100%'; img.style.maxHeight = '260px'; img.style.borderRadius = '6px';
+      img.style.maxWidth = '100%'; img.style.maxHeight = '220px'; img.style.borderRadius = '6px';
       $('dz-ref').appendChild(img);
       const small = img.naturalWidth < 480;
       $('meta-ref').innerHTML =
         `📄 ${file.name} — ${img.naturalWidth}×${img.naturalHeight}px ` +
-        (small ? '<span class="warn">⚠ image petite : le tracking sera moins fiable (min. conseillé : 480 px)</span>'
+        (small ? '<span class="warn">⚠ image petite : tracking moins fiable (min. 480 px)</span>'
                : '<span class="ok">✓ taille suffisante</span>');
-      updatePreview(); updateButtons();
+      rebuildPreview(); updateButtons();
     };
-    img.src = url;
+    img.src = URL.createObjectURL(file);
   });
 
-  // ── Panneau 2 : contenu à superposer ──────────────────
+  // ── 2. Calques ────────────────────────────────────────
   setupDropzone('dz-content', 'file-content', (file) => {
     const isVideo = file.type.startsWith('video/');
     const isImage = file.type.startsWith('image/');
-    if (!isVideo && !isImage) return alert('Choisissez une vidéo MP4 ou une image.');
+    if (!isVideo && !isImage) return alert(file.name + ' : format non supporté (MP4 ou image).');
     const url = URL.createObjectURL(file);
 
     if (isVideo) {
       const v = document.createElement('video');
-      v.src = url; v.muted = true; v.loop = true; v.playsInline = true; v.autoplay = true;
+      v.src = url; v.muted = true; v.loop = true; v.playsInline = true;
       v.onloadedmetadata = () => {
-        content = { file, url, type: 'video', width: v.videoWidth, height: v.videoHeight, name: file.name };
-        $('dz-content').innerHTML = ''; $('dz-content').appendChild(v); v.play().catch(()=>{});
-        $('meta-content').innerHTML =
-          `🎞️ ${file.name} — ${v.videoWidth}×${v.videoHeight}px · ${(file.size/1048576).toFixed(1)} Mo ` +
-          (file.size > 40*1048576 ? '<span class="warn">⚠ fichier lourd : long à charger sur mobile</span>' : '<span class="ok">✓</span>');
-        updatePreview(); updateButtons();
+        const layer = newLayer(file, url, 'video', v.videoWidth, v.videoHeight);
+        layer._srcEl = v; v.play().catch(()=>{});
+        layers.push(layer); selected = layers.length - 1;
+        renderChips(); rebuildPreview(); updateButtons();
       };
     } else {
       const img = new Image();
       img.onload = () => {
-        content = { file, url, type: 'image', width: img.naturalWidth, height: img.naturalHeight, name: file.name };
-        $('dz-content').innerHTML = ''; $('dz-content').appendChild(img);
-        const gifNote = file.type === 'image/gif'
-          ? ' <span class="warn">⚠ GIF : seule la 1ʳᵉ image sera animée en AR — convertissez en MP4 pour l\'animation</span>' : '';
-        $('meta-content').innerHTML = `🖼️ ${file.name} — ${img.naturalWidth}×${img.naturalHeight}px${gifNote}`;
-        updatePreview(); updateButtons();
+        const layer = newLayer(file, url, 'image', img.naturalWidth, img.naturalHeight);
+        layer._srcEl = img;
+        if (file.type === 'image/gif')
+          alert('GIF : seule la 1ʳᵉ image sera visible en AR — convertissez en MP4 pour l\'animation.');
+        layers.push(layer); selected = layers.length - 1;
+        renderChips(); rebuildPreview(); updateButtons();
       };
       img.src = url;
     }
   });
 
-  // ── Aperçu de superposition ────────────────────────────
-  const S = { scale: 1, ox: 0, oy: 0, opacity: 1 };
+  function renderChips() {
+    const box = $('layer-chips');
+    box.innerHTML = '';
+    layers.forEach((l, i) => {
+      const chip = document.createElement('span');
+      chip.className = 'chip' + (i === selected ? ' selected' : '');
+      chip.innerHTML = `${l.type === 'video' ? '🎞️' : '🖼️'} ${l.name.slice(0,22)} <span class="x" title="Retirer">✕</span>`;
+      chip.addEventListener('click', (e) => {
+        if (e.target.classList.contains('x')) {
+          layers.splice(i, 1);
+          if (selected >= layers.length) selected = layers.length - 1;
+        } else {
+          selected = i;
+        }
+        renderChips(); rebuildPreview(); updateButtons();
+      });
+      box.appendChild(chip);
+    });
+  }
 
-  const sliderDefs = [
-    ['s-scale', 'v-scale', (v) => { S.scale = v/100;  return v + ' %'; }],
-    ['s-opacity','v-opacity',(v) => { S.opacity = v/100; return v + ' %'; }],
-    ['s-ox', 'v-ox', (v) => { S.ox = v/100; return v; }],
-    ['s-oy', 'v-oy', (v) => { S.oy = v/100; return v; }],
+  // ── 3. Aperçu de composition ──────────────────────────
+  function rebuildPreview() {
+    const ready = refImage && layers.length > 0;
+    $('preview-placeholder').style.display = ready ? 'none' : 'block';
+    $('preview-outer').style.display = ready ? 'block' : 'none';
+    $('sliders').style.display = ready ? 'grid' : 'none';
+    $('chroma-box').style.display = ready ? 'block' : 'none';
+    if (!ready) return;
+
+    $('preview-ref').src = refImage.el.src;
+
+    // reconstruit les couches DOM
+    const stage = $('preview-stage');
+    stage.querySelectorAll('.layer-overlay').forEach(e => e.remove());
+    layers.forEach((l, i) => {
+      const wrap = document.createElement('div');
+      wrap.className = 'layer-overlay' + (i === selected ? ' selected' : '');
+      let media;
+      if (l.chroma.enabled) {
+        media = document.createElement('canvas');
+        media.width = Math.min(480, l.width);
+        media.height = Math.round(media.width * l.height / l.width);
+      } else if (l.type === 'video') {
+        media = l._srcEl; l._srcEl.play().catch(()=>{});
+      } else {
+        media = document.createElement('img');
+        media.src = l.url;
+      }
+      wrap.appendChild(media);
+      l._domWrap = wrap; l._domMedia = media; l._needsRedraw = true;
+      stage.appendChild(wrap);
+    });
+    syncControlsToSelected();
+    positionLayers();
+  }
+
+  function positionLayers() {
+    if (!refImage) return;
+    const stageW = $('preview-ref').clientWidth;
+    layers.forEach((l) => {
+      if (!l._domWrap) return;
+      const w = stageW * l.scale;
+      const h = w * (l.height / l.width);
+      l._domWrap.style.width = w + 'px';
+      l._domWrap.style.height = h + 'px';
+      l._domWrap.style.left = `calc(50% + ${l.ox * stageW}px)`;
+      l._domWrap.style.top  = `calc(50% - ${l.oy * stageW}px)`;
+      l._domWrap.style.opacity = l.opacity;
+    });
+  }
+  window.addEventListener('resize', positionLayers);
+
+  // ── Boucle de rendu chroma key (aperçu) ───────────────
+  function smoothstepJS(e0, e1, x) {
+    const t = Math.min(1, Math.max(0, (x - e0) / Math.max(1e-5, e1 - e0)));
+    return t * t * (3 - 2 * t);
+  }
+
+  function drawChroma(l) {
+    const cv = l._domMedia;
+    if (!cv || cv.tagName !== 'CANVAS' || !l._srcEl) return;
+    const ctx = cv.getContext('2d', { willReadFrequently: true });
+    try { ctx.drawImage(l._srcEl, 0, 0, cv.width, cv.height); } catch { return; }
+    const imgData = ctx.getImageData(0, 0, cv.width, cv.height);
+    const d = imgData.data;
+    const hex = l.chroma.color.replace('#',''); const kc = parseInt(hex, 16);
+    const kr = (kc >> 16 & 255) / 255, kg = (kc >> 8 & 255) / 255, kb = (kc & 255) / 255;
+    const sim = l.chroma.similarity, smo = l.chroma.smoothness;
+    for (let i = 0; i < d.length; i += 4) {
+      const r = d[i]/255, g = d[i+1]/255, b = d[i+2]/255;
+      const dist = Math.sqrt((r-kr)*(r-kr) + (g-kg)*(g-kg) + (b-kb)*(b-kb));
+      d[i+3] = d[i+3] * smoothstepJS(sim, sim + smo, dist);
+    }
+    ctx.putImageData(imgData, 0, 0);
+  }
+
+  let lastDraw = 0;
+  function renderLoop(ts) {
+    if (ts - lastDraw > 80) {   // ~12 fps, suffisant pour l'aperçu
+      lastDraw = ts;
+      layers.forEach((l) => {
+        if (!l.chroma.enabled || !l._domMedia) return;
+        if (l.type === 'video' || l._needsRedraw) { drawChroma(l); l._needsRedraw = false; }
+      });
+    }
+    requestAnimationFrame(renderLoop);
+  }
+  requestAnimationFrame(renderLoop);
+
+  // ── Contrôles du calque sélectionné ───────────────────
+  function sel() { return layers[selected] || null; }
+
+  function syncControlsToSelected() {
+    const l = sel(); if (!l) return;
+    $('s-scale').value = Math.round(l.scale * 100);   $('v-scale').textContent = Math.round(l.scale * 100) + ' %';
+    $('s-opacity').value = Math.round(l.opacity * 100); $('v-opacity').textContent = Math.round(l.opacity * 100) + ' %';
+    $('s-ox').value = Math.round(l.ox * 100); $('v-ox').textContent = Math.round(l.ox * 100);
+    $('s-oy').value = Math.round(l.oy * 100); $('v-oy').textContent = Math.round(l.oy * 100);
+    $('chroma-on').checked = l.chroma.enabled;
+    $('chroma-controls').style.display = l.chroma.enabled ? 'block' : 'none';
+    $('chroma-color').value = l.chroma.color;
+    $('s-sim').value = Math.round(l.chroma.similarity * 100); $('v-sim').textContent = Math.round(l.chroma.similarity * 100);
+    $('s-smo').value = Math.round(l.chroma.smoothness * 100); $('v-smo').textContent = Math.round(l.chroma.smoothness * 100);
+  }
+
+  const bindings = [
+    ['s-scale', 'v-scale', (l,v) => { l.scale = v/100; return v + ' %'; }],
+    ['s-opacity','v-opacity',(l,v) => { l.opacity = v/100; return v + ' %'; }],
+    ['s-ox', 'v-ox', (l,v) => { l.ox = v/100; return v; }],
+    ['s-oy', 'v-oy', (l,v) => { l.oy = v/100; return v; }],
   ];
-  sliderDefs.forEach(([sid, vid, apply]) => {
+  bindings.forEach(([sid, vid, apply]) => {
     $(sid).addEventListener('input', (e) => {
-      $(vid).textContent = apply(+e.target.value);
-      positionOverlay();
+      const l = sel(); if (!l) return;
+      $(vid).textContent = apply(l, +e.target.value);
+      positionLayers();
     });
   });
 
-  function updatePreview() {
-    if (!refImage || !content) return;
-    $('preview-placeholder').style.display = 'none';
-    $('preview-stage').style.display = 'block';
-    $('sliders').style.display = 'grid';
-    $('preview-ref').src = refImage.el.src;
+  $('chroma-on').addEventListener('change', () => {
+    const l = sel(); if (!l) return;
+    l.chroma.enabled = $('chroma-on').checked;
+    rebuildPreview();
+  });
+  $('chroma-color').addEventListener('input', () => {
+    const l = sel(); if (!l) return;
+    l.chroma.color = $('chroma-color').value; l._needsRedraw = true;
+  });
+  document.querySelectorAll('.preset-swatch').forEach((sw) => {
+    sw.addEventListener('click', () => {
+      const l = sel(); if (!l) return;
+      l.chroma.color = sw.dataset.c; $('chroma-color').value = sw.dataset.c; l._needsRedraw = true;
+    });
+  });
+  $('s-sim').addEventListener('input', (e) => {
+    const l = sel(); if (!l) return;
+    l.chroma.similarity = +e.target.value / 100; $('v-sim').textContent = e.target.value; l._needsRedraw = true;
+  });
+  $('s-smo').addEventListener('input', (e) => {
+    const l = sel(); if (!l) return;
+    l.chroma.smoothness = +e.target.value / 100; $('v-smo').textContent = e.target.value; l._needsRedraw = true;
+  });
 
-    const ov = $('preview-overlay');
-    ov.innerHTML = '';
-    let el;
-    if (content.type === 'video') {
-      el = document.createElement('video');
-      el.src = content.url; el.muted = true; el.loop = true; el.playsInline = true; el.autoplay = true;
-      el.play().catch(()=>{});
-    } else {
-      el = document.createElement('img');
-      el.src = content.url;
-    }
-    el.style.width = '100%'; el.style.display = 'block';
-    ov.appendChild(el);
-    // repositionne une fois l'image de référence affichée
-    requestAnimationFrame(positionOverlay);
-  }
-
-  function positionOverlay() {
-    if (!refImage || !content) return;
-    const stageW = $('preview-ref').clientWidth;      // largeur affichée de l'image de réf.
-    const w = stageW * S.scale;                       // largeur du contenu (unité = largeur image)
-    const h = w * (content.height / content.width);
-    const ov = $('preview-overlay');
-    ov.style.width  = w + 'px';
-    ov.style.height = h + 'px';
-    // décalages en fraction de la largeur de l'image ; Y positif = vers le haut (comme en AR)
-    ov.style.left = `calc(50% + ${S.ox * stageW}px)`;
-    ov.style.top  = `calc(50% - ${S.oy * stageW}px)`;
-    ov.style.opacity = S.opacity;
-  }
-  window.addEventListener('resize', positionOverlay);
-
-  // ── Ajout à la liste ───────────────────────────────────
+  // ── 4. Ajout d'une expérience ─────────────────────────
   function updateButtons() {
-    $('btn-add').disabled = !(refImage && content);
+    $('btn-add').disabled = !(refImage && layers.length > 0);
     $('btn-generate').disabled = experiences.length === 0;
   }
 
@@ -383,30 +543,29 @@
 
   $('btn-add').addEventListener('click', () => {
     const rawName = $('exp-name').value.trim() || `experience-${experiences.length + 1}`;
-    const exp = {
+    experiences.push({
       name: sanitize(rawName),
       imgEl: refImage.el, imgName: refImage.name,
       imageAspect: refImage.height / refImage.width,
-      contentFile: content.file,
-      contentName: sanitize(content.name),
-      type: content.type,
-      contentAspect: content.height / content.width,
-      scale: S.scale, offsetX: S.ox, offsetY: S.oy, opacity: S.opacity,
       thumb: refImage.el.src,
-    };
-    experiences.push(exp);
+      layers: layers.map((l) => ({
+        file: l.file, fileName: sanitize(l.name), type: l.type,
+        contentAspect: l.height / l.width,
+        scale: l.scale, offsetX: l.ox, offsetY: l.oy, opacity: l.opacity,
+        chroma: l.chroma.enabled
+          ? { color: l.chroma.color, similarity: l.chroma.similarity, smoothness: l.chroma.smoothness }
+          : null,
+      })),
+    });
     renderList();
 
-    // réinitialise les panneaux pour l'expérience suivante
-    refImage = null; content = null;
+    // réinitialisation pour l'expérience suivante
+    layers.forEach(l => l._srcEl?.pause?.());
+    refImage = null; layers = []; selected = -1;
     $('dz-ref').innerHTML = '<div class="hint-big">🖼️</div><div>Déposez ici l\'image qui sera <b>scannée</b><br>(JPG ou PNG) ou cliquez pour choisir</div>';
-    $('dz-content').innerHTML = '<div class="hint-big">🎞️</div><div>Déposez ici la <b>vidéo MP4</b> ou l\'<b>image</b><br>qui apparaîtra en AR</div>';
-    $('meta-ref').innerHTML = ''; $('meta-content').innerHTML = '';
-    $('exp-name').value = '';
-    $('preview-stage').style.display = 'none'; $('sliders').style.display = 'none';
-    $('preview-placeholder').style.display = 'block';
-    $('file-ref').value = ''; $('file-content').value = '';
-    updateButtons();
+    $('dz-content').innerHTML = '<div class="hint-big">🎞️</div><div>Déposez ici une <b>vidéo MP4</b> ou une <b>image</b><br>— chaque dépôt ajoute un calque</div>';
+    $('meta-ref').innerHTML = ''; $('exp-name').value = '';
+    renderChips(); rebuildPreview(); updateButtons();
   });
 
   function renderList() {
@@ -417,14 +576,14 @@
     }
     list.innerHTML = '';
     experiences.forEach((exp, i) => {
+      const chromaCount = exp.layers.filter(l => l.chroma).length;
       const item = document.createElement('div');
       item.className = 'exp-item';
       item.innerHTML = `
         <img class="thumb" src="${exp.thumb}" alt="">
         <div class="info"><b>${exp.name}</b><br>
-          ${exp.type === 'video' ? '🎞️ vidéo' : '🖼️ image'} · ${exp.contentName}
-          · taille ${(exp.scale*100).toFixed(0)} %</div>
-        <button class="btn small" data-i="${i}">🗑 Retirer</button>`;
+          ${exp.layers.length} calque(s)${chromaCount ? ' · 🟩 ' + chromaCount + ' chroma key' : ''}</div>
+        <button class="btn small">🗑 Retirer</button>`;
       item.querySelector('button').addEventListener('click', () => {
         experiences.splice(i, 1); renderList(); updateButtons();
       });
@@ -433,16 +592,15 @@
     updateButtons();
   }
 
-  // ── Compilation + export ZIP ───────────────────────────
+  // ── 5. Compilation + export ZIP ───────────────────────
   $('btn-generate').addEventListener('click', async () => {
     const btn = $('btn-generate');
     btn.disabled = true;
     $('result-box').style.display = 'none';
     $('progress-wrap').style.display = 'block';
-    $('progress-label').textContent = 'Compilation des images de tracking… (cela peut prendre une minute)';
+    $('progress-label').textContent = 'Compilation des images de tracking…';
 
     try {
-      // 1. Compile toutes les images de référence en un seul fichier .mind
       const compiler = new Compiler();
       await compiler.compileImageTargets(
         experiences.map((e) => e.imgEl),
@@ -453,34 +611,48 @@
       );
       const mindBuffer = await compiler.exportData();
 
-      // 2. Construit la configuration lue par ar.html
+      // médias : dédoublonnage par nom de fichier
+      const mediaMap = new Map(); // nom final -> File
+      const finalName = (file, wanted) => {
+        let name = wanted, n = 1;
+        while (mediaMap.has(name) && mediaMap.get(name) !== file) {
+          const dot = wanted.lastIndexOf('.');
+          name = dot > 0 ? `${wanted.slice(0,dot)}-${n}${wanted.slice(dot)}` : `${wanted}-${n}`;
+          n++;
+        }
+        mediaMap.set(name, file);
+        return name;
+      };
+
       const config = {
-        version: 1,
+        version: 2,
         generated: new Date().toISOString(),
         experiences: experiences.map((e, i) => ({
           name: e.name,
           targetIndex: i,
-          type: e.type,
-          src: 'media/' + e.contentName,
           imageAspect: +e.imageAspect.toFixed(4),
-          contentAspect: +e.contentAspect.toFixed(4),
-          scale: e.scale, offsetX: e.offsetX, offsetY: e.offsetY, opacity: e.opacity,
+          layers: e.layers.map((l) => ({
+            type: l.type,
+            src: 'media/' + finalName(l.file, l.fileName),
+            contentAspect: +l.contentAspect.toFixed(4),
+            scale: +l.scale.toFixed(3), offsetX: +l.offsetX.toFixed(3),
+            offsetY: +l.offsetY.toFixed(3), opacity: +l.opacity.toFixed(2),
+            chroma: l.chroma,
+          })),
         })),
       };
 
-      // 3. Pack ZIP : targets.mind + experiences.json + media/
       $('progress-label').textContent = 'Création du pack…';
       const zip = new JSZip();
       zip.file('targets.mind', mindBuffer);
       zip.file('experiences.json', JSON.stringify(config, null, 2));
       const media = zip.folder('media');
-      experiences.forEach((e) => media.file(e.contentName, e.contentFile));
+      mediaMap.forEach((file, name) => media.file(name, file));
 
       const blob = await zip.generateAsync({ type: 'blob' }, (m) => {
         $('progress-bar').style.width = m.percent.toFixed(0) + '%';
       });
 
-      // 4. Téléchargement
       const a = document.createElement('a');
       a.href = URL.createObjectURL(blob);
       a.download = 'webar-pack.zip';

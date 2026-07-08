@@ -66,6 +66,87 @@
   <!-- La scène A-Frame est construite dynamiquement à partir de assets/experiences.json -->
 
   <script>
+    // ═══════════════════════════════════════════════════════════
+    // COMPOSANT CHROMA KEY — supprime une couleur (ex. fond vert)
+    // Shader : chaque pixel proche de la couleur clé devient
+    // transparent, avec un adoucissement des bords (smoothstep).
+    // ═══════════════════════════════════════════════════════════
+    AFRAME.registerComponent('chroma-material', {
+      schema: {
+        assetId:    { type: 'string' },
+        isVideo:    { type: 'boolean', default: true },
+        color:      { type: 'string', default: '#00ff00' },
+        similarity: { type: 'number', default: 0.4 },
+        smoothness: { type: 'number', default: 0.1 },
+        opacity:    { type: 'number', default: 1.0 },
+      },
+
+      init() {
+        this.applyMaterial = this.applyMaterial.bind(this);
+        if (this.el.getObject3D('mesh')) this.applyMaterial();
+        else this.el.addEventListener('object3dset', this.applyMaterial);
+      },
+
+      applyMaterial() {
+        const mesh = this.el.getObject3D('mesh');
+        if (!mesh || this._done) return;
+        this._done = true;
+
+        try {
+          const srcEl = document.getElementById(this.data.assetId);
+          let texture;
+          if (this.data.isVideo) {
+            texture = new THREE.VideoTexture(srcEl);
+          } else {
+            texture = new THREE.TextureLoader().load(srcEl.src);
+          }
+          texture.minFilter = THREE.LinearFilter;
+          texture.magFilter = THREE.LinearFilter;
+
+          // Couleur clé en valeurs sRGB brutes (mêmes valeurs que la texture échantillonnée)
+          const hex = parseInt(this.data.color.replace('#', ''), 16);
+          const keyColor = new THREE.Vector3(
+            ((hex >> 16) & 255) / 255, ((hex >> 8) & 255) / 255, (hex & 255) / 255
+          );
+
+          const material = new THREE.ShaderMaterial({
+            transparent: true,
+            side: THREE.DoubleSide,
+            uniforms: {
+              map:        { value: texture },
+              keyColor:   { value: keyColor },
+              similarity: { value: this.data.similarity },
+              smoothness: { value: this.data.smoothness },
+              opacity:    { value: this.data.opacity },
+            },
+            vertexShader: `
+              varying vec2 vUv;
+              void main() {
+                vUv = uv;
+                gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+              }`,
+            fragmentShader: `
+              uniform sampler2D map;
+              uniform vec3 keyColor;
+              uniform float similarity;
+              uniform float smoothness;
+              uniform float opacity;
+              varying vec2 vUv;
+              void main() {
+                vec4 c = texture2D(map, vUv);
+                float dist = distance(c.rgb, keyColor);
+                float alpha = smoothstep(similarity, similarity + max(smoothness, 0.001), dist);
+                gl_FragColor = vec4(c.rgb, c.a * alpha * opacity);
+              }`,
+          });
+          mesh.material = material;
+        } catch (e) {
+          console.error('chroma-material : échec, matériau standard conservé', e);
+        }
+      },
+    });
+
+    // ═══════════════════════════════════════════════════════════
     const badge = document.getElementById('status-badge');
     const soundBtn = document.getElementById('btn-sound');
 
@@ -74,13 +155,28 @@
       document.getElementById('error-box').style.display = 'flex';
     }
 
+    // Rétrocompatibilité : convertit une config v1 (1 contenu/expérience)
+    // au format v2 (calques multiples).
+    function normalizeConfig(config) {
+      (config.experiences || []).forEach((exp) => {
+        if (!exp.layers) {
+          exp.layers = [{
+            type: exp.type, src: exp.src, contentAspect: exp.contentAspect,
+            scale: exp.scale, offsetX: exp.offsetX, offsetY: exp.offsetY,
+            opacity: exp.opacity ?? 1, chroma: exp.chromaKey ? { color: '#00ff00', similarity: 0.4, smoothness: 0.1 } : null,
+          }];
+        }
+      });
+      return config;
+    }
+
     async function init() {
       // ── 1. Charge la configuration générée par le studio ──
       let config;
       try {
         const res = await fetch('assets/experiences.json', { cache: 'no-store' });
         if (!res.ok) throw new Error(res.status);
-        config = await res.json();
+        config = normalizeConfig(await res.json());
       } catch (e) {
         return fail(`Aucune expérience publiée pour l'instant.<br><br>
           Créez-en une dans le <a href="studio.html">🎬 Studio</a>, puis placez le contenu
@@ -107,58 +203,80 @@
       scene.appendChild(assets);
 
       const videos = [];
+      const assetIds = new Map(); // src -> assetId (dédoublonnage)
 
       config.experiences.forEach((exp, i) => {
-        // ── Déclare l'asset (vidéo ou image) ──
-        let assetId = 'asset-' + i;
-        if (exp.type === 'video') {
-          const v = document.createElement('video');
-          v.id = assetId;
-          v.src = 'assets/' + exp.src;
-          v.setAttribute('preload', 'auto');
-          v.setAttribute('playsinline', ''); v.setAttribute('webkit-playsinline', '');
-          v.muted = true; v.loop = true; v.crossOrigin = 'anonymous';
-          assets.appendChild(v);
-          videos.push(v);
-        } else {
-          const img = document.createElement('img');
-          img.id = assetId;
-          img.src = 'assets/' + exp.src;
-          img.crossOrigin = 'anonymous';
-          assets.appendChild(img);
-        }
-
-        // ── Entité liée à la cible n° i ──
-        // Convention MindAR : la largeur de l'image de référence = 1 unité.
         const target = document.createElement('a-entity');
         target.setAttribute('mindar-image-target', 'targetIndex: ' + i);
+        const expVideos = [];
 
-        const w = exp.scale;                       // largeur du contenu (en largeurs d'image)
-        const h = w * exp.contentAspect;           // hauteur selon le ratio du contenu
-        const plane = document.createElement(exp.type === 'video' ? 'a-video' : 'a-image');
-        plane.setAttribute('src', '#' + assetId);
-        plane.setAttribute('width', w);
-        plane.setAttribute('height', h);
-        plane.setAttribute('position', `${exp.offsetX} ${exp.offsetY} 0.01`);
-        plane.setAttribute('opacity', exp.opacity ?? 1);
-        target.appendChild(plane);
+        exp.layers.forEach((layer, j) => {
+          // ── Asset (vidéo ou image), partagé si déjà déclaré ──
+          let assetId = assetIds.get(layer.src);
+          if (!assetId) {
+            assetId = `asset-${i}-${j}`;
+            assetIds.set(layer.src, assetId);
+            if (layer.type === 'video') {
+              const v = document.createElement('video');
+              v.id = assetId;
+              v.src = 'assets/' + layer.src;
+              v.setAttribute('preload', 'auto');
+              v.setAttribute('playsinline', ''); v.setAttribute('webkit-playsinline', '');
+              v.muted = true; v.loop = true; v.crossOrigin = 'anonymous';
+              assets.appendChild(v);
+              videos.push(v);
+            } else {
+              const img = document.createElement('img');
+              img.id = assetId;
+              img.src = 'assets/' + layer.src;
+              img.crossOrigin = 'anonymous';
+              assets.appendChild(img);
+            }
+          }
+          if (layer.type === 'video') expVideos.push(assetId);
+
+          // ── Plan du calque ──
+          // Convention MindAR : largeur de l'image de référence = 1 unité.
+          // Les calques peuvent dépasser le cadre (scale > 1, offsets libres).
+          const w = layer.scale;
+          const h = w * layer.contentAspect;
+          let plane;
+          if (layer.chroma) {
+            // Plan neutre + shader chroma key
+            plane = document.createElement('a-plane');
+            plane.setAttribute('material', 'transparent: true; opacity: 0');
+            plane.setAttribute('chroma-material',
+              `assetId: ${assetId}; isVideo: ${layer.type === 'video'}; ` +
+              `color: ${layer.chroma.color}; similarity: ${layer.chroma.similarity}; ` +
+              `smoothness: ${layer.chroma.smoothness}; opacity: ${layer.opacity ?? 1}`);
+          } else {
+            plane = document.createElement(layer.type === 'video' ? 'a-video' : 'a-image');
+            plane.setAttribute('src', '#' + assetId);
+            plane.setAttribute('opacity', layer.opacity ?? 1);
+          }
+          plane.setAttribute('width', w);
+          plane.setAttribute('height', h);
+          // léger décalage en Z par calque pour éviter le scintillement (z-fighting)
+          plane.setAttribute('position', `${layer.offsetX} ${layer.offsetY} ${0.01 + j * 0.02}`);
+          target.appendChild(plane);
+        });
 
         // ── Lecture vidéo pilotée par la détection ──
         target.addEventListener('targetFound', () => {
           badge.textContent = '✅ « ' + exp.name + ' » détectée';
           badge.style.background = 'rgba(39,174,96,0.75)';
-          if (exp.type === 'video') {
-            const v = document.getElementById(assetId);
+          expVideos.forEach((id) => {
+            const v = document.getElementById(id);
             v.play().catch(() => {
               document.addEventListener('touchstart', () => v.play(), { once: true });
             });
-            soundBtn.style.display = 'block';
-          }
+          });
+          if (expVideos.length) soundBtn.style.display = 'block';
         });
         target.addEventListener('targetLost', () => {
           badge.textContent = '🔍 Recherche d\'une image…';
           badge.style.background = 'rgba(0,0,0,0.55)';
-          if (exp.type === 'video') document.getElementById(assetId).pause();
+          expVideos.forEach((id) => document.getElementById(id).pause());
         });
 
         scene.appendChild(target);
